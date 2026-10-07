@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debt Management & Officer Command Center - BAAC</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    :root {
+      --primary-900: #022c22;
+      --primary-800: #047857;
+      --primary-700: #059669;
+      --primary-600: #10b981;
+      --primary-100: #d1fae5;
+      --primary-50: #f0fdf4;
+      
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #34d399;
+      
+      --slate-900: #0f172a;
+      --slate-700: #334155;
+      --slate-500: #64748b;
+      --slate-200: #e2e8f0;
+      --slate-100: #f8fafc;
+      --white: #ffffff;
+      
+      --red: #f43f5e;
+      --amber: #f59e0b;
+      --emerald: #10b981;
+      
+      --shadow-premium: 0 20px 25px -5px rgba(5, 150, 105, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      --border-subtle: rgba(226, 232, 240, 0.8);
+    }
+    
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; color: var(--slate-900); font-family: "Noto Sans Thai", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 10% 10%, rgba(52, 211, 153, 0.12), transparent 40%),
+                  radial-gradient(circle at 90% 90%, rgba(6, 182, 212, 0.08), transparent 40%),
+                  #f4fbf7;
+      min-height: 100vh;
+    }
+    button, input, select { font: inherit; }
+    
+    .topbar {
+      position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 5%; color: white; background: linear-gradient(135deg, #022c22, #047857);
+      box-shadow: 0 4px 20px rgba(4, 120, 87, 0.2);
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    
+    .baac-logo {
+      width: 50px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #ffffff, #f0fdf4);
+      color: #065f46; font-weight: 900; border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12); border: 2px solid #34d399; text-align: center; line-height: 1.1;
+    }
+    .baac-logo span:first-child { font-size: 13px; letter-spacing: 0.5px; }
+    .baac-logo span:last-child { font-size: 10px; opacity: 0.85; }
+
+    .brand h1 { margin: 0; font-size: 18px; letter-spacing: 0.3px; font-weight: 800; }
+    .brand p { margin: 3px 0 0; font-size: 11.5px; color: #a7f3d0; font-weight: 500; }
+    
+    .top-actions, .toolbar { display: flex; align-items: center; gap: 10px; }
+    .top-actions { flex-wrap: wrap; }
+    .container { width: min(1440px, 94%); margin: 28px auto 52px; }
+    
+    .hero {
+      padding: 32px; border-radius: 24px; color: white; margin-bottom: 24px;
+      background: linear-gradient(135deg, #047857, #0d9488); box-shadow: var(--shadow-premium);
+      display: flex; justify-content: space-between; align-items: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::after {
+      content: ""; position: absolute; right: -40px; bottom: -40px; width: 220px; height: 220px;
+      background: rgba(255, 255, 255, 0.1); border-radius: 50%; pointer-events: none;
+    }
+    .hero h2 { margin: 0 0 6px; font-size: 28px; font-weight: 800; }
+    .hero p { margin: 0; color: #ccfbf1; font-size: 13.5px; line-height: 1.6; }
+    .hero-tag { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(6px); color: white; padding: 8px 16px; font-weight: 700; font-size: 12px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.3); }
+    
+    .panel { background: var(--white); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-premium); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .panel-header h3 { margin: 0; font-size: 17px; color: var(--primary-900); font-weight: 700; }
+    .panel-header p { margin: 4px 0 0; font-size: 12px; color: var(--slate-500); }
+    
+    .filters { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)) auto; gap: 14px; align-items: end; }
+    label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: var(--slate-700); }
+    input, select { width: 100%; padding: 11px 14px; border: 1px solid var(--slate-200); border-radius: 12px; outline: none; background: #fff; transition: all 0.2s; }
+    input:focus, select:focus { border-color: var(--primary-600); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12); }
+    
+    .btn { min-height: 46px; padding: 8px 16px; display: inline-flex; align-items: center; justify-content: center; line-height: 1.25; text-align: center; background: var(--primary-700); color: white; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(4, 120, 87, 0.2); }
+    .top-actions .btn { flex: 1 1 145px; }
+    .btn:hover { background: var(--primary-800); transform: translateY(-1px); }
+    .btn-light { background: var(--primary-50); color: var(--primary-900); border: 1px solid #a7f3d0; box-shadow: none; }
+    .btn-light:hover { background: #d1fae5; }
+    .btn-danger { background: var(--red); box-shadow: 0 2px 6px rgba(244, 63, 94, 0.2); }
+    
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: white; border: 1px solid var(--border-subtle); border-radius: 20px; padding: 20px; position: relative; overflow: hidden; box-shadow: var(--shadow-premium); transition: transform 0.2s; }
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-card::after { content: ""; position: absolute; right: -15px; bottom: -25px; width: 85px; height: 85px; background: var(--primary-50); border-radius: 50%; }
+    .kpi-card.warning::after { background: #fef3c7; }
+    .kpi-card.danger::after { background: #ffe4e6; }
+    .kpi-label { font-size: 12px; color: var(--slate-500); font-weight: 700; position: relative; z-index: 1; }
+    .kpi-value { font-size: 24px; font-weight: 900; color: var(--primary-900); margin-top: 8px; position: relative; z-index: 1; }
+    .kpi-card.warning .kpi-value { color: var(--amber); }
+    .kpi-card.danger .kpi-value { color: var(--red); }
+    .kpi-note { font-size: 11px; color: var(--slate-500); margin-top: 6px; position: relative; z-index: 1; }
+    
+    .dashboard-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 24px; margin-bottom: 24px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    
+    .chart-box { display: flex; align-items: flex-end; gap: 12px; min-height: 240px; padding-top: 15px; border-bottom: 1px solid var(--slate-200); overflow-x: auto; }
+    .bar-item { flex: 1; min-width: 55px; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 210px; justify-content: flex-end; }
+    .bar { width: 100%; background: linear-gradient(180deg, var(--accent-emerald), var(--primary-800)); border-radius: 8px 8px 0 0; min-height: 4px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); }
+    .bar-lbl { font-size: 10px; color: var(--slate-500); text-align: center; }
+    
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { background: var(--slate-100); padding: 12px 14px; text-align: left; color: var(--slate-700); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 2px solid var(--slate-200); }
+    td { padding: 13px 14px; border-bottom: 1px solid var(--slate-200); color: var(--slate-900); }
+    tr:hover td { background: var(--primary-50); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    
+    .badge { padding: 5px 10px; border-radius: 99px; font-weight: 800; font-size: 10.5px; display: inline-block; text-align: center; }
+    .badge.green { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge.yellow { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge.red { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
+    
+    .upload-zone { display: grid; grid-template-columns: 1fr auto; gap: 14px; background: var(--primary-50); padding: 18px; border: 1px dashed var(--primary-600); border-radius: 14px; align-items: center; }
+    .msg { font-size: 12px; font-weight: 700; margin-top: 8px; }
+    
+    .modal-bg { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: grid; place-items: center; z-index: 1000; backdrop-filter: blur(6px); }
+    .modal { background: white; width: min(480px, 92%); padding: 28px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+    .modal h3 { margin: 0 0 6px; color: var(--primary-900); font-size: 20px; }
+    .modal p { margin: 0 0 18px; font-size: 12.5px; color: var(--slate-500); }
+    .modal form { display: grid; gap: 14px; }
+    
+    .loading { position: fixed; right: 24px; bottom: 24px; background: var(--primary-900); color: white; padding: 14px 20px; border-radius: 14px; font-weight: 700; font-size: 12.5px; z-index: 2000; box-shadow: var(--shadow-premium); border: 1px solid rgba(255,255,255,0.1); }
+    .toast { position: fixed; top: 86px; right: 24px; z-index: 2100; width: min(420px, calc(100% - 32px)); padding: 14px 18px; color: white; border-radius: 10px; font-size: 13px; font-weight: 700; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2); }
+    .toast.success { background: #047857; }
+    .toast.error { background: #be123c; }
+    .hidden { display: none !important; }
+    
+    @media(max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .dashboard-grid, .two-col { grid-template-columns: 1fr; } }
+    @media(max-width: 700px) {
+      .topbar { flex-wrap: wrap; gap: 12px; }
+      .top-actions { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .top-actions .btn { width: 100%; min-width: 0; }
+    }
+    @media(max-width: 420px) { .top-actions { grid-template-columns: 1fr; } }
+    @media(print) {
+      .topbar, .filters, .upload-zone, .login-only, .no-print { display: none !important; }
+      body { background: white; }
+      .container { width: 100%; margin: 0; }
+      .panel, .kpi-card { box-shadow: none; border: 1px solid #cbd5e1; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="baac-logo">
+        <span>ธ.ก.ส.</span>
+        <span>BAAC</span>
+      </div>
+      <div>
+        <h1>Debt Command Center</h1>
+        <p>เขตนครศรีธรรมราช & รายงานผล KPI บน.2</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="userBadge" style="font-size: 12px; color: #a7f3d0; font-weight: 700;">โหมดผู้บริหาร</span>
+      <button class="btn btn-light no-print" onclick="openOfficerModal()">👥 รายชื่อพนักงานดูแลสาขา</button>
+      <button class="btn btn-light no-print" onclick="window.print()">พิมพ์ One Page</button>
+      <button class="btn btn-light login-only hidden no-print" onclick="exportToExcel()" style="background:#047857; color:white; border:none;">📥 ส่งออก Excel</button>
+      <button class="btn btn-light no-print" id="loginBtn" onclick="openLogin()">เข้าสู่ระบบ</button>
+      <button class="btn btn-danger hidden no-print" id="logoutBtn" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div>
+        <h2>Executive One Page Command Center</h2>
+        <p>ระบบบริหารจัดการหนี้ วิเคราะห์ภาพรวมความเสี่ยง รายงานผลตามตัวชี้วัด และติดตามผลงานรายศูนย์/รายบุคคล</p>
+      </div>
+      <div class="hero-tag">Nakhon Si Thammarat</div>
+    </section>
+
+    <!-- ตัวกรองข้อมูล -->
+    <section class="panel">
+      <div class="filters">
+        <label>ศูนย์ / สาขา / HUB
+          <select id="centerFilter" onchange="loadDashboard()">
+            <option value="">ทุกศูนย์จัดการหนี้</option>
+          </select>
+        </label>
+        <label>เดือนครบกำหนด
+          <input type="month" id="monthFilter" onchange="loadDashboard()">
+        </label>
+        <label>วันที่ประมวลผล
+          <input type="text" id="reportDate" readonly>
+        </label>
+        <button class="btn" onclick="loadDashboard()">ประมวลผลข้อมูล</button>
+      </div>
+    </section>
+
+    <!-- KPI บน.2 ประจำเดือน -->
+    <section class="panel" id="kpiPanel">
+      <div class="panel-header">
+        <div>
+          <h3>รายงานผลการดำเนินงาน KPI บน.2 ประจำเดือน</h3>
+          <p>ข้อมูลสถานะ NPLs เปรียบเทียบภาพรวมระดับเขตและระดับภาค</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>หน่วยงาน / เขต</th>
+              <th class="num">NPL ยกมาต้นปี (ล้านบาท)</th>
+              <th class="num">NPL คงเหลือ (ล้านบาท)</th>
+              <th class="num">เปลี่ยนแปลง (บาท)</th>
+              <th class="num">ร้อยละการเปลี่ยนแปลง</th>
+            </tr>
+          </thead>
+          <tbody id="kpiTable"><tr><td colspan="5" style="text-align:center; padding:20px;">กำลังโหลดข้อมูล KPI...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel login-only hidden no-print" id="indicatorImportPanel">
+      <div class="panel-header">
+        <div>
+          <h3>ฐานข้อมูลตัวชี้วัดและผลการดำเนินงาน</h3>
+          <p>จัดเก็บข้อมูลต้นทางแยกตามหัวข้อ โดยคงชื่อไฟล์ ชีต หน้า และเลขแถวไว้ตรวจสอบย้อนหลัง</p>
+        </div>
+      </div>
+      <div class="two-col" style="margin-bottom:0;">
+        <label>หัวข้อตัวชี้วัด
+          <select id="indicatorKey">
+            <option value="npl_outstanding">NPL คงเหลือ</option>
+            <option value="na">ผลการดำเนินงาน NA</option>
+            <option value="provision_dqmis">การสำรองหนี้ DQMIS</option>
+            <option value="payment_due">รับชำระหนี้ถึงกำหนด</option>
+            <option value="expired_statute">หนี้ขาดอายุความ</option>
+            <option value="approaching_statute">หนี้จะขาดอายุความ</option>
+            <option value="write_off">Write Off</option>
+            <option value="litigation_reduction">ลดหนี้ดำเนินคดี</option>
+            <option value="deceased">ข้อมูลลูกหนี้เสียชีวิต</option>
+            <option value="badbank_weekly">ข้อมูลลูกหนี้ 6035 รายสัปดาห์</option>
+            <option value="kpi_report">รายงาน KPI บน.2</option>
+            <option value="kpi_forecast">คาดการณ์ KPI รายศูนย์</option>
+            <option value="officer_roster">ทะเบียนพนักงานและสาขา</option>
+          </select>
+        </label>
+        <label>รอบรายงาน / วันที่ข้อมูล
+          <input id="indicatorPeriod" placeholder="เช่น 2569-08 หรือ 31/08/2569">
+        </label>
+        <label>หน่วยข้อมูล
+          <input id="indicatorUnit" placeholder="เช่น บาท, ล้านบาท, สัญญา, ร้อยละ">
+        </label>
+      </div>
+      <div class="upload-zone" style="margin-top:14px;">
+        <label>เลือกไฟล์ Excel หรือ PDF
+          <input type="file" id="indicatorFile" accept=".xlsx,.xls,.pdf">
+        </label>
+        <button class="btn" onclick="uploadIndicatorFile()">นำเข้าฐานข้อมูล</button>
+      </div>
+      <div class="msg" id="indicatorImportMsg" aria-live="polite"></div>
+      <div style="margin-top:18px; border-top:1px solid var(--slate-200); padding-top:14px;">
+        <div class="panel-header" style="margin-bottom:10px;">
+          <div>
+            <h3>รายการข้อมูลตัวชี้วัด</h3>
+            <p id="indicatorRecordCount">กำลังโหลดข้อมูล</p>
+          </div>
+          <button class="btn btn-light" onclick="loadIndicatorRecords(1)">รีเฟรชรายการ</button>
+        </div>
+        <div class="toolbar" style="margin-bottom:12px;">
+          <select id="indicatorFilter" onchange="loadIndicatorRecords(1)" style="max-width:280px;">
+            <option value="">ทุกหัวข้อตัวชี้วัด</option>
+            <option value="npl_outstanding">NPL คงเหลือ</option>
+            <option value="na">ผลการดำเนินงาน NA</option>
+            <option value="provision_dqmis">การสำรองหนี้ DQMIS</option>
+            <option value="payment_due">รับชำระหนี้ถึงกำหนด</option>
+            <option value="expired_statute">หนี้ขาดอายุความ</option>
+            <option value="approaching_statute">หนี้จะขาดอายุความ</option>
+            <option value="write_off">Write Off</option>
+            <option value="litigation_reduction">ลดหนี้ดำเนินคดี</option>
+            <option value="deceased">ข้อมูลลูกหนี้เสียชีวิต</option>
+            <option value="badbank_weekly">ข้อมูลลูกหนี้ 6035 รายสัปดาห์</option>
+            <option value="kpi_report">รายงาน KPI บน.2</option>
+            <option value="kpi_forecast">คาดการณ์ KPI รายศูนย์</option>
+            <option value="officer_roster">ทะเบียนพนักงานและสาขา</option>
+          </select>
+          <input id="indicatorSearch" placeholder="ค้นหาชื่อไฟล์ ชีต รอบรายงาน หรือข้อมูล" style="max-width:420px;">
+          <button class="btn" onclick="loadIndicatorRecords(1)">ค้นหา</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>หัวข้อตัวชี้วัด</th><th>รอบรายงาน</th><th>แหล่งข้อมูล</th><th>ชีต / หน้า / แถว</th><th>ข้อมูลต้นทาง</th></tr></thead>
+            <tbody id="indicatorTable"><tr><td colspan="5" style="text-align:center; padding:18px;">เข้าสู่ระบบเพื่อดูข้อมูล</td></tr></tbody>
+          </table>
+        </div>
+        <div class="toolbar" style="justify-content:flex-end; margin-top:10px;">
+          <button class="btn btn-light" id="indicatorPrev" onclick="loadIndicatorRecords(indicatorPage - 1)" disabled>ก่อนหน้า</button>
+          <span id="indicatorPageLabel" style="font-size:12px; color:var(--slate-500);">หน้า 1</span>
+          <button class="btn btn-light" id="indicatorNext" onclick="loadIndicatorRecords(indicatorPage + 1)" disabled>ถัดไป</button>
+        </div>
+      </div>
+      <div style="margin-top:18px; border-top:1px solid var(--slate-200); padding-top:14px;">
+        <div class="panel-header"><div><h3>สารบัญหัวข้อตัวชี้วัด</h3><p>หมวดข้อมูลอ้างอิงตามชื่อรายงานที่จัดเตรียมไว้ในระบบ</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>หัวข้อ</th><th>ไฟล์ต้นทาง</th><th>ขอบเขตข้อมูลที่จัดเก็บ</th><th>นำเข้า</th></tr></thead>
+            <tbody>
+              <tr><td>NPL คงเหลือ</td><td>1.ผลการดำเนินงาน NPL คงเหลือ.xlsx</td><td>ยอดคงเหลือจำแนกรอบเวลาและหน่วยงาน ตามคอลัมน์ในไฟล์</td><td><button class="btn btn-light" onclick="selectIndicatorFile('npl_outstanding')">เลือกไฟล์</button></td></tr>
+              <tr><td>ผลการดำเนินงาน NA</td><td>2_ผลการดำเนินงาน NA.xlsx</td><td>รายการผลการดำเนินงานและค่าตัวชี้วัดตามโครงสร้างรายงาน</td><td><button class="btn btn-light" onclick="selectIndicatorFile('na')">เลือกไฟล์</button></td></tr>
+              <tr><td>การสำรองหนี้ DQMIS</td><td>3_ผลการดำเนินงานการสำรอง DQMIS.xlsx</td><td>ยอดหนี้ อัตราการกันสำรอง และยอดกันสำรอง แยกตามศูนย์/งวด</td><td><button class="btn btn-light" onclick="selectIndicatorFile('provision_dqmis')">เลือกไฟล์</button></td></tr>
+              <tr><td>รับชำระหนี้ถึงกำหนด</td><td>4_ผลการดำเนินงานรับชำระหนี้ถึงกำหนด.xlsx</td><td>สัญญา ต้นเงิน ดอกเบี้ย ผลงาน อัตราลดหนี้ คะแนน และลำดับรายไตรมาส</td><td><button class="btn btn-light" onclick="selectIndicatorFile('payment_due')">เลือกไฟล์</button></td></tr>
+              <tr><td>หนี้ขาดอายุความ</td><td>5_ผลการดำเนินงานหนี้ขาดอายุความ.xlsx</td><td>จำนวนสัญญา ต้นเงินคงเหลือ ดอกเบี้ย และผลการแก้ไขตามหน่วยงาน</td><td><button class="btn btn-light" onclick="selectIndicatorFile('expired_statute')">เลือกไฟล์</button></td></tr>
+              <tr><td>หนี้จะขาดอายุความ</td><td>6_ผลการดำเนินงานหนี้จะขาดอายุความ.xlsx</td><td>รายการตามช่วงเวลาที่จะขาดอายุความ พร้อมยอดและสถานะตามต้นทาง</td><td><button class="btn btn-light" onclick="selectIndicatorFile('approaching_statute')">เลือกไฟล์</button></td></tr>
+              <tr><td>Write Off</td><td>7_ผลการดำเนินงาน Write Off.xlsx</td><td>ผลการดำเนินงานตัดหนี้สูญตามรอบและหน่วยงาน</td><td><button class="btn btn-light" onclick="selectIndicatorFile('write_off')">เลือกไฟล์</button></td></tr>
+              <tr><td>ลดหนี้ดำเนินคดี</td><td>8_ผลการดำเนินงาน ลดหนี้ดำเนินคดี.xlsx</td><td>ผลการลดหนี้/ดำเนินคดีตามหัวคอลัมน์ต้นฉบับ</td><td><button class="btn btn-light" onclick="selectIndicatorFile('litigation_reduction')">เลือกไฟล์</button></td></tr>
+              <tr><td>ข้อมูลลูกหนี้เสียชีวิต</td><td>99_ข้อมูลลูกหนี้เสียชีวิต.xlsx</td><td>ข้อมูลบัญชีลูกหนี้และสถานะเสียชีวิตตามไฟล์ต้นทาง</td><td><button class="btn btn-light" onclick="selectIndicatorFile('deceased')">เลือกไฟล์</button></td></tr>
+              <tr><td>ข้อมูลลูกหนี้รายสัปดาห์</td><td>6035_IndicatorBadBank_Weekly.xlsx</td><td>ข้อมูลลูกหนี้/สัญญา ตัวระบุหน่วยงาน ยอดหนี้ และสถานะตามชีต</td><td><button class="btn btn-light" onclick="selectIndicatorFile('badbank_weekly')">เลือกไฟล์</button></td></tr>
+              <tr><td>รายงาน KPI บน.2</td><td>รายละเอียดผลการดำเนินงานตาม KPI บน.2 ประจำดือนกรกฎาคม 2569.pdf</td><td>เก็บข้อความที่อ่านได้แยกตามหน้า; PDF ที่เป็นภาพสแกนต้อง OCR ก่อนจึงค้นข้อความในหน้าได้</td><td><button class="btn btn-light" onclick="selectIndicatorFile('kpi_report')">เลือกไฟล์ PDF</button></td></tr>
+              <tr><td>คาดการณ์ KPI รายศูนย์</td><td>คาดการณ์ KPIs.xlsx</td><td>เป้าหมาย NPL/ลดสำรองราย HUB และค่ารายเดือนตามชีต ไม่ใช้จัดอันดับผลงานรายบุคคล</td><td><button class="btn btn-light" onclick="selectIndicatorFile('kpi_forecast')">เลือกไฟล์</button></td></tr>
+              <tr><td>ทะเบียนพนักงานและสาขา</td><td>รายชื่อพนักงานบริหารจัดการหนี้ เขตนครศรีธรรมราช.xlsx</td><td>จับคู่รหัสพนักงาน ชื่อ ตำแหน่ง เบอร์โทร และ HUB/สาขา โดยคงเป้าหมายรายงวดเดิมไว้</td><td><button class="btn btn-light" onclick="selectIndicatorFile('officer_roster')">เลือกไฟล์</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:18px; border-top:1px solid var(--slate-200); padding-top:14px;">
+        <div class="panel-header">
+          <div><h3>คลังเอกสารต้นฉบับใน Google Drive</h3><p id="sourceArchiveCount">แสดงไฟล์ที่จัดเก็บ สรุปเอกสาร และผลตรวจการเปลี่ยนแปลง</p></div>
+          <div class="toolbar">
+            <button class="btn btn-light" onclick="loadSourceArchives()">รีเฟรชคลังเอกสาร</button>
+            <button class="btn" onclick="scanSourceFolder()">สแกนโฟลเดอร์ต้นฉบับ</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ไฟล์ / หมวด / งวด</th><th>วันที่เก็บ</th><th>สถานะ</th><th>สรุปเอกสาร</th><th>ต้นฉบับ</th></tr></thead>
+            <tbody id="sourceArchiveTable"><tr><td colspan="5" style="text-align:center; padding:18px;">เข้าสู่ระบบเพื่อดูคลังเอกสาร</td></tr></tbody>
+          </table>
+        </div>
+        <div id="sourceFolderScanResults" style="margin-top:14px;"></div>
+      </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">ลูกหนี้ทั้งหมด (CIF)</div>
+        <div class="kpi-value" id="kTotalDebtors">0 ราย</div>
+        <div class="kpi-note">ข้อมูลจากไฟล์ 6035</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ภาระหนี้คงเหลือรวม</div>
+        <div class="kpi-value" id="kOutstanding">฿0</div>
+        <div class="kpi-note">รวมเงินต้น ดอกเบี้ย และค่าปรับ</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ยอดจัดเก็บสะสม</div>
+        <div class="kpi-value" id="kCollected">฿0</div>
+        <div class="kpi-note">เป้าหมาย <span id="kTarget">฿0</span></div>
+      </div>
+      <div class="kpi-card warning">
+        <div class="kpi-label">อัตราจัดเก็บจริง</div>
+        <div class="kpi-value" id="kRate">0%</div>
+        <div class="kpi-note">เทียบกับเป้าหมายรวม</div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-label">ลูกหนี้เกินกำหนด</div>
+        <div class="kpi-value" id="kOverdue">0 ราย</div>
+        <div class="kpi-note">เกินกำหนดชำระ</div>
+      </div>
+    </section>
+
+    <!-- กราฟและอายุหนี้ -->
+    <section class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>ยอดหนี้คงเหลือแยกตามศูนย์ / สาขา</h3>
+            <p>เปรียบเทียบภาระหนี้สูงสุด 12 อันดับแรก</p>
+          </div>
+        </div>
+        <div class="chart-box" id="centerChart"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>การวิเคราะห์อายุหนี้ (Aging)</h3>
+            <p>สัดส่วนภาระหนี้ค้างชำระตามช่วงเวลา</p>
+          </div>
+        </div>
+        <div id="agingList" style="display:grid; gap:14px; padding-top:10px;"></div>
+      </div>
+    </section>
+
+    <!-- ตารางผลงานรายศูนย์ -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>สรุปผลการดำเนินงานและจัดลำดับรายศูนย์ / สาขา</h3>
+          <p>วิเคราะห์ประสิทธิภาพการจัดเก็บและอัตราความสำเร็จเทียบเป้าหมาย</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>อันดับ</th>
+              <th>ศูนย์จัดการหนี้ / สาขา</th>
+              <th class="num">จำนวน (CIF)</th>
+              <th class="num">หนี้คงเหลือรวม</th>
+              <th class="num">จัดเก็บได้</th>
+              <th class="num">เป้าหมาย</th>
+              <th class="num">ผลงาน (%)</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="centerTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- จัดลำดับผลงานรายคน (หลัง Login) -->
+    <section class="two-col login-only hidden">
+      <div class="panel" style="margin-bottom:0;">
+        <div class="panel-header">
+          <div>
+            <h3>🏆 5 ลำดับแรก ผลงานยอดเยี่ยม</h3>
+            <p>เรียงตามอัตราจัดเก็บเทียบเป้าหมาย ผู้ไม่มีเป้าหมายจะไม่ถูกจัดอันดับ</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>อันดับ</th>
+                <th>พนักงานบริหารจัดการหนี้</th>
+                <th>รหัสพนักงาน</th>
+                <th>สาขา / ศูนย์</th>
+                <th class="num">จัดเก็บได้ / เป้าหมาย</th>
+                <th class="num">ผลงาน (%)</th>
+              </tr>
+            </thead>
+            <tbody id="topOfficersTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:0;">
+        <div class="panel-header">
+          <div>
+            <h3>⚠️ 5 ลำดับสุดท้าย ต้องเร่งรัด</h3>
+            <p>พนักงานบริหารจัดการหนี้ที่ต้องให้ความช่วยเหลือหรือติดตามใกล้ชิด</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>พนักงานบริหารจัดการหนี้</th>
+                <th>สาขา / ศูนย์</th>
+                <th class="num">จัดเก็บได้ / เป้าหมาย</th>
+                <th class="num">ผลงาน (%)</th>
+              </tr>
+            </thead>
+            <tbody id="bottomOfficersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ตารางตัวชี้วัดผลงานพนักงานบริหารจัดการหนี้ทั้งหมด (หลัง Login) -->
+    <section class="panel login-only hidden" style="margin-top: 24px;">
+      <div class="panel-header">
+        <div>
+          <h3>ตัวชี้วัดผลงานพนักงานบริหารจัดการหนี้ทั้งหมด</h3>
+            <p id="officerRankingCriteria">เรียงตามอัตราจัดเก็บเทียบเป้าหมาย เฉพาะรายชื่อที่มีเป้าหมายจริง รายอื่นแสดงเป็นยังไม่จัดอันดับ</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>อันดับ</th>
+              <th>พนักงานบริหารจัดการหนี้</th>
+                <th>รหัสพนักงาน</th>
+              <th>รหัสพนักงาน</th>
+              <th>สาขา / ศูนย์</th>
+              <th class="num">รับผิดชอบ (CIF)</th>
+              <th class="num">หนี้คงเหลือ</th>
+              <th class="num">จัดเก็บได้</th>
+              <th class="num">เป้าหมาย</th>
+              <th class="num">ผลงาน (%)</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="officerTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel login-only hidden">
+      <div class="panel-header">
+        <div>
+          <h3>รายการลูกหนี้ภาระหนี้สูงสุด (High Risk Watchlist)</h3>
+          <p>ลูกหนี้ที่ต้องให้ความสำคัญและติดตามเร่งด่วน</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>CIF</th>
+              <th>ชื่อ - สกุล</th>
+              <th>ศูนย์ / สาขา</th>
+              <th>พนักงานบริหารจัดการหนี้</th>
+              <th class="num">ยอดหนี้คงเหลือ</th>
+              <th>ครบกำหนด</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="riskTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- นำเข้าไฟล์ข้อมูล (หลัง Login) -->
+    <section class="panel login-only hidden no-print">
+      <div class="panel-header">
+        <div>
+          <h3>นำเข้าไฟล์ข้อมูลหนี้ (6035_IndicatorBadBank_Weekly.xlsx)</h3>
+          <p>อัปเดตข้อมูลอัตโนมัติด้วยรหัส CIF และรวมสัญญาอัตโนมัติ</p>
+        </div>
+      </div>
+      <div class="upload-zone">
+        <label>เลือกไฟล์ Excel (.xlsx)
+          <input type="file" id="debtFile" accept=".xlsx,.xls">
+        </label>
+        <button class="btn" onclick="uploadDebtFile()">นำเข้าข้อมูลหนี้</button>
+      </div>
+      <div class="msg" id="debtMsg"></div>
+    </section>
+
+    <section class="panel login-only hidden no-print">
+      <div class="panel-header">
+        <div>
+          <h3>ทะเบียนรายชื่อลูกหนี้</h3>
+          <p>ค้นหาและคัดกรองข้อมูลรายบุคคล</p>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-bottom: 14px;">
+        <input id="searchKw" placeholder="ค้นหาชื่อ, CIF, เบอร์โทร" style="max-width: 300px;">
+        <select id="searchStatus" style="max-width: 180px;">
+          <option value="">ทุกสถานะ</option>
+          <option value="ปกติ">ปกติ</option>
+          <option value="ต้องติดตาม">ต้องติดตาม</option>
+          <option value="ผิดนัด/เสี่ยงสูง">ผิดนัด/เสี่ยงสูง</option>
+        </select>
+        <button class="btn" onclick="loadDebtorList()">ค้นหา</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>CIF</th>
+              <th>ชื่อลูกหนี้</th>
+              <th>ศูนย์ / สาขา</th>
+              <th>ประเภทหนี้</th>
+              <th class="num">หนี้คงเหลือ</th>
+              <th>ครบกำหนด</th>
+              <th>โทรศัพท์</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="debtorTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: รายชื่อพนักงานดูแลสาขา -->
+  <div class="modal-bg hidden" id="officerModal">
+    <div class="modal" style="width: min(700px, 95%); max-height: 85vh; overflow-y: auto;">
+      <h3>รายชื่อพนักงานที่ดูแลแต่ละสาขา</h3>
+      <p>โครงสร้างความรับผิดชอบและการติดต่อประสานงานรายสาขา/ศูนย์</p>
+      
+      <div class="table-wrap" style="margin-bottom: 16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>รหัส</th>
+              <th>ชื่อ - สกุล</th>
+              <th>สาขา / ศูนย์รับผิดชอบ</th>
+              <th>ตำแหน่ง</th>
+              <th>เบอร์โทรศัพท์</th>
+              <th>งวดผลงาน</th>
+              <th class="num">เป้าหมาย</th>
+              <th class="num">จัดเก็บได้</th>
+            </tr>
+          </thead>
+          <tbody id="officerDirectoryBody"></tbody>
+        </table>
+      </div>
+
+      <div class="login-only hidden" style="border-top: 1px solid var(--slate-200); padding-top: 14px; margin-bottom: 12px;">
+        <h4 style="margin: 0 0 8px; font-size: 14px; color: var(--primary-900);">เพิ่ม/กำหนดพนักงานดูแลสาขา</h4>
+        <form onsubmit="saveOfficer(event)" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <label>รหัสพนักงาน <input id="offEmployeeId"></label>
+          <label>ชื่อพนักงาน <input id="offName" required></label>
+          <label>สาขา / ศูนย์ <input id="offBranch" required></label>
+          <label>ตำแหน่ง <input id="offRole"></label>
+          <label>เบอร์โทร <input id="offPhone"></label>
+          <label>งวดผลงาน <input id="offPeriod" type="month"></label>
+          <label>เป้าหมาย (บาท) <input id="offTarget" type="number" min="0" step="0.01"></label>
+          <label>ยอดจัดเก็บ (บาท) <input id="offCollected" type="number" min="0" step="0.01"></label>
+          <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+            <button class="btn" type="submit">บันทึกข้อมูลพนักงาน</button>
+          </div>
+        </form>
+      </div>
+
+      <div style="text-align: right;">
+        <button class="btn btn-light" onclick="closeOfficerModal()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal-bg hidden" id="loginModal">
+    <div class="modal">
+      <h3>เข้าสู่ระบบพนักงานบริหารจัดการหนี้</h3>
+      <p>กรอกชื่อผู้ใช้และรหัสผ่านเพื่อดูข้อมูลเชิงลึกและนำเข้าไฟล์</p>
+      <form onsubmit="doLogin(event)">
+        <label>ชื่อผู้ใช้ <input id="username" autocomplete="username" required></label>
+        <label>รหัสผ่าน <input id="password" type="password" autocomplete="current-password" required></label>
+        <button class="btn" type="submit">เข้าสู่ระบบ</button>
+        <button class="btn btn-light" type="button" onclick="closeLogin()">ยกเลิก</button>
+        <div class="msg" id="loginMsg" style="color:var(--red)"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-bg hidden" id="importPreviewModal" role="dialog" aria-modal="true" aria-labelledby="importPreviewTitle">
+    <div class="modal" style="width:min(900px, 95%); max-height:88vh; overflow-y:auto;">
+      <h3 id="importPreviewTitle">สรุปเอกสารก่อนนำเข้า</h3>
+      <p id="importPreviewLead">ตรวจสอบข้อมูลและรายการเปลี่ยนแปลงก่อนยืนยัน</p>
+      <div id="importSummaryBody" style="max-height:55vh; overflow:auto; border:1px solid var(--slate-200); padding:14px; border-radius:8px;"></div>
+      <div class="toolbar" style="justify-content:flex-end; margin-top:16px;">
+        <button class="btn btn-light" onclick="cancelImportPreview()">ยกเลิก</button>
+        <button class="btn" id="confirmImportButton" onclick="confirmImportPreview()">ยืนยันประมวลผล</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading hidden" id="loadingBox">กำลังประมวลผล...</div>
+  <div class="toast hidden" id="toast" role="alert" aria-live="assertive"></div>
+
+  <script>
+    /* ==========================================================
+       ใส่ URL Web App จาก Google Apps Script (ที่ลงท้าย /exec) ตรงนี้
+    ========================================================== */
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyUdPH-_HMiUgkSvJ8MwHasmf7UZPmlTzyg5-yr-xLSfJsgA8htrq2dy2vi-pbD5PIE/exec';
+
+    let authToken = localStorage.getItem('d_token') || '';
+    let authUser = JSON.parse(localStorage.getItem('d_user') || 'null');
+    let currentDashboardData = null;
+    let indicatorPage = 1;
+    let indicatorTotal = 0;
+    let pendingSourceImport = null;
+    let sourceFolderRows = [];
+    let sourceImportInProgress = false;
+    const requests = new Map();
+    let toastTimer = null;
+
+    const formatMoney = v => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(v || 0);
+    const formatNumber = v => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(v || 0);
+    const formatPercent = v => Number(v || 0).toFixed(1) + '%';
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+
+    function normalizeImportedDate(value) {
+      if (!value) return '';
+      if (value instanceof Date && !isNaN(value)) return value.toISOString().slice(0, 10);
+      const text = String(value).trim();
+      const isoDate = text.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (isoDate) return isoDate[1];
+      const localDate = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+      if (localDate) {
+        const year = Number(localDate[3]) > 2400 ? Number(localDate[3]) - 543 : Number(localDate[3]);
+        return `${year}-${String(localDate[2]).padStart(2, '0')}-${String(localDate[1]).padStart(2, '0')}`;
+      }
+      const parsed = new Date(text);
+      return isNaN(parsed) ? '' : parsed.toISOString().slice(0, 10);
+    }
+
+    function showLoading(show) { document.getElementById('loadingBox').classList.toggle('hidden', !show); }
+
+    function notify(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.className = `toast ${type === 'error' ? 'error' : 'success'}`;
+      toast.textContent = message;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.add('hidden'), 5000);
+    }
+
+    const READ_ONLY_ACTIONS = new Set(['ping', 'dashboard', 'verify', 'debtors', 'getOfficers', 'indicatorRecords', 'checkSourceFile', 'sourceArchives']);
+
+    function callGas(action, payload = {}, options = {}) {
+      const timeout = Number(options.timeout || 120000);
+      const retries = options.retries !== undefined ? Number(options.retries) : (READ_ONLY_ACTIONS.has(action) ? 1 : 0);
+      return callGasWithRetry_(action, payload, timeout, retries);
+    }
+
+    async function callGasWithRetry_(action, payload, timeout, retries) {
+      let latestError;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          return await sendGasRequest_(action, payload, timeout);
+        } catch (error) {
+          latestError = error;
+          if (attempt < retries) await wait_(1200 * (attempt + 1));
+        }
+      }
+      throw latestError;
+    }
+
+    function sendGasRequest_(action, payload, timeout) {
+      return new Promise((resolve, reject) => {
+        if (!GAS_URL || GAS_URL.includes('ใส่_URL') || !GAS_URL.endsWith('/exec')) {
+          reject(new Error('กรุณาใส่ URL Web App ของ Google Apps Script ที่ลงท้ายด้วย /exec'));
+          return;
+        }
+
+        const requestId = Date.now() + '_' + Math.random().toString(36).slice(2);
+        const iframe = document.createElement('iframe');
+        iframe.name = 'gas_iframe_' + requestId;
+        iframe.style.display = 'none';
+
+        const form = document.createElement('form');
+        form.method = 'POST'; form.action = GAS_URL; form.target = iframe.name; form.acceptCharset = 'UTF-8'; form.style.display = 'none';
+
+        Object.entries({ action, requestId, payload: JSON.stringify(payload || {}) }).forEach(([k, v]) => {
+          const inp = document.createElement('input'); inp.type = 'hidden'; inp.name = k; inp.value = v; form.appendChild(inp);
+        });
+
+        const timer = setTimeout(() => {
+          cleanupGasRequest_(requestId);
+          reject(new Error('Google Apps Script ใช้เวลาประมวลผลเกินกำหนด กรุณาลองใหม่'));
+        }, timeout);
+
+        requests.set(requestId, { resolve, reject, timer, form, iframe });
+        document.body.appendChild(iframe); document.body.appendChild(form);
+        try { form.submit(); } catch (error) { cleanupGasRequest_(requestId); reject(error); }
+      });
+    }
+
+    function cleanupGasRequest_(requestId) {
+      const req = requests.get(requestId);
+      if (!req) return;
+      clearTimeout(req.timer);
+      if (req.form && req.form.parentNode) req.form.remove();
+      if (req.iframe && req.iframe.parentNode) req.iframe.remove();
+      requests.delete(requestId);
+    }
+
+    function wait_(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    window.addEventListener('message', event => {
+      const data = event.data;
+      if (!data || data.app !== 'DEBT_MANAGEMENT' || !data.requestId) return;
+      const req = requests.get(data.requestId);
+      if (!req) return;
+      cleanupGasRequest_(data.requestId);
+      if (data.success) req.resolve(data.data); else req.reject(new Error(data.message || 'เกิดข้อผิดพลาด'));
+    });
+
+    async function loadDashboard() {
+      try {
+        showLoading(true);
+        const res = await callGas('dashboard', {
+          token: authToken,
+          center: document.getElementById('centerFilter').value,
+          month: document.getElementById('monthFilter').value
+        });
+        currentDashboardData = res;
+        if (authToken && !res.authenticated) {
+          authToken = ''; authUser = null;
+          localStorage.removeItem('d_token'); localStorage.removeItem('d_user');
+          applyAuth();
+        }
+        renderDashboard(res);
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderDashboard(data) {
+      const s = data.summary;
+      document.getElementById('kTotalDebtors').textContent = formatNumber(s.totalDebtors) + ' ราย';
+      document.getElementById('kOutstanding').textContent = formatMoney(s.totalOutstanding);
+      document.getElementById('kCollected').textContent = formatMoney(s.totalCollected);
+      document.getElementById('kTarget').textContent = formatMoney(s.totalTarget);
+      document.getElementById('kRate').textContent = formatPercent(s.collectionRate);
+      document.getElementById('kOverdue').textContent = formatNumber(s.overdueCount) + ' ราย';
+      document.getElementById('reportDate').value = data.generatedAt || '';
+
+      updateCenterSelect(data.centersList || []);
+      renderChart(data.centers || []);
+      renderAging(data.aging || {});
+      renderCenterTable(data.centers || []);
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const kpiRows = (data.kpiSummary || []).filter(row => !selectedMonth || normalizeImportedDate(row.Month).slice(0, 7) === selectedMonth);
+      renderKpiTable(kpiRows);
+
+      if (data.authenticated) {
+        renderOfficerTable(data.officers || []);
+        renderTopBottomOfficers(data.officers || []);
+        renderRiskTable(data.highRisk || []);
+      }
+    }
+
+    function updateCenterSelect(list) {
+      const sel = document.getElementById('centerFilter');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">ทุกศูนย์จัดการหนี้</option>' + list.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      sel.value = cur;
+    }
+
+    function renderKpiTable(rows) {
+      const tbody = document.getElementById('kpiTable');
+      tbody.innerHTML = rows.length ? rows.map(row => `
+        <tr>
+          <td>${escapeHtml(row.ZoneOrCenter || row.Region || '-')}</td>
+          <td class="num">${Number(row.BeginningNPL || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td class="num">${Number(row.CurrentNPL || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td class="num">${Number(row.ChangeAmount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ล้าน</td>
+          <td class="num" style="color:${Number(row.ChangePercent || 0) > 0 ? 'var(--red)' : 'var(--primary-800)'}">${Number(row.ChangePercent || 0) > 0 ? '+' : ''}${Number(row.ChangePercent || 0).toFixed(2)}%</td>
+        </tr>
+      `).join('') : '<tr><td colspan="5" style="text-align:center; padding:20px;">ไม่มีข้อมูล KPI สำหรับเดือนที่เลือก</td></tr>';
+    }
+
+    function renderChart(centers) {
+      const box = document.getElementById('centerChart');
+      if (!centers.length) { box.innerHTML = '<div style="padding:20px; color:#64748b">ยังไม่มีข้อมูลศูนย์จัดการหนี้</div>'; return; }
+      const max = Math.max(...centers.map(c => c.outstanding), 1);
+      box.innerHTML = centers.slice(0, 10).map(c => {
+        const h = Math.max(6, (c.outstanding / max) * 170);
+        return `<div class="bar-item" title="${escapeHtml(c.center)}: ${formatMoney(c.outstanding)}"><div class="bar" style="height:${h}px"></div><div class="bar-lbl">${escapeHtml(c.center.substring(0, 10))}<br><b>${formatNumber(c.outstanding/1e6)}ลป.</b></div></div>`;
+      }).join('');
+    }
+
+    function renderAging(aging) {
+      const box = document.getElementById('agingList');
+      const max = Math.max(1, ...Object.values(aging));
+      box.innerHTML = Object.entries(aging).map(([k, v]) => `
+        <div style="display:grid; grid-template-columns: 100px 1fr 110px; align-items:center; gap:10px; font-size:12px;">
+          <strong>${escapeHtml(k)}</strong>
+          <div style="background:var(--slate-100); height:10px; border-radius:99px; overflow:hidden;">
+            <div style="background:var(--primary-600); height:100%; width:${(v/max)*100}%;"></div>
+          </div>
+          <strong class="num">${formatMoney(v)}</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderCenterTable(centers) {
+      const tbody = document.getElementById('centerTable');
+      const sorted = [...centers].sort((a,b) => b.collectionRate - a.collectionRate);
+      
+      tbody.innerHTML = sorted.length ? sorted.map((c, idx) => `
+        <tr>
+          <td><b>#${idx + 1}</b></td>
+          <td><b>${escapeHtml(c.center)}</b></td>
+          <td class="num">${formatNumber(c.debtors)}</td>
+          <td class="num">${formatMoney(c.outstanding)}</td>
+          <td class="num">${formatMoney(c.collected)}</td>
+          <td class="num">${formatMoney(c.target)}</td>
+          <td class="num"><b>${formatPercent(c.collectionRate)}</b></td>
+          <td><span class="badge ${c.status==='ดีมาก'?'green':c.status==='ติดตาม'?'yellow':'red'}">${escapeHtml(c.status)}</span></td>
+        </tr>
+      `).join('') : '<tr><td colspan="8" style="text-align:center; padding:20px;">ไม่มีข้อมูล</td></tr>';
+    }
+
+    function renderOfficerTable(officers) {
+      const tbody = document.getElementById('officerTable');
+      tbody.innerHTML = officers.length ? officers.map(o => `
+        <tr>
+          <td>${o.rank ? `<span class="badge green">#${formatNumber(o.rank)}</span>` : '<span class="badge yellow">ยังไม่จัดอันดับ</span>'}</td>
+          <td><b>${escapeHtml(o.officer)}</b></td>
+          <td>${escapeHtml(o.employeeId || '-')}</td>
+          <td>${escapeHtml(o.center || 'ไม่ระบุสาขา')}</td>
+          <td class="num">${formatNumber(o.debtors)}</td>
+          <td class="num">${formatMoney(o.outstanding)}</td>
+          <td class="num">${formatMoney(o.collected)}</td>
+          <td class="num">${formatMoney(o.target)}</td>
+          <td class="num">${formatPercent(o.collectionRate)}</td>
+          <td><span class="badge ${o.status==='บรรลุเป้าหมาย'?'green':o.status==='ใกล้เป้าหมาย'?'yellow':'red'}">${escapeHtml(o.status || 'ไม่ระบุสถานะ')}</span></td>
+        </tr>
+      `).join('') : '<tr><td colspan="10" style="text-align:center; padding:20px;">ไม่มีข้อมูลพนักงานบริหารจัดการหนี้</td></tr>';
+    }
+
+    function renderTopBottomOfficers(officers) {
+      const sorted = [...officers].filter(o => o.rankable && o.rank).sort((a,b) => a.rank - b.rank);
+      const top5 = sorted.slice(0, 5);
+      const bottom5 = [...sorted].slice(-5).reverse();
+
+      document.getElementById('topOfficersTable').innerHTML = top5.length ? top5.map((o, idx) => `
+        <tr>
+          <td><span class="badge green">#${formatNumber(o.rank || idx + 1)}</span></td>
+          <td><b>${escapeHtml(o.officer)}</b></td>
+          <td>${escapeHtml(o.employeeId || '-')}</td>
+          <td>${escapeHtml(o.center)}</td>
+          <td class="num">${formatMoney(o.collected)} / ${formatMoney(o.target)}</td>
+          <td class="num" style="color:var(--emerald);"><b>${formatPercent(o.collectionRate)}</b></td>
+        </tr>
+      `).join('') : '<tr><td colspan="6" style="text-align:center; padding:15px;">ไม่มีผู้มีเป้าหมายให้จัดอันดับ</td></tr>';
+
+      document.getElementById('bottomOfficersTable').innerHTML = bottom5.length ? bottom5.map((o, idx) => `
+        <tr>
+          <td><span class="badge red">#${formatNumber(o.rank || sorted.length - idx)}</span></td>
+          <td><b>${escapeHtml(o.officer)}</b></td>
+          <td>${escapeHtml(o.employeeId || '-')}</td>
+          <td>${escapeHtml(o.center)}</td>
+          <td class="num">${formatMoney(o.collected)} / ${formatMoney(o.target)}</td>
+          <td class="num" style="color:var(--red);"><b>${formatPercent(o.collectionRate)}</b></td>
+        </tr>
+      `).join('') : '<tr><td colspan="6" style="text-align:center; padding:15px;">ไม่มีผู้มีเป้าหมายให้จัดอันดับ</td></tr>';
+    }
+
+    function renderRiskTable(rows) {
+      document.getElementById('riskTable').innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${escapeHtml(r.debtorId)}</td>
+          <td><b>${escapeHtml(r.name)}</b></td>
+          <td>${escapeHtml(r.center)}</td>
+          <td>${escapeHtml(r.officer || '-')}</td>
+          <td class="num"><b>${formatMoney(r.outstanding)}</b></td>
+          <td>${escapeHtml(r.dueDate || '-')}</td>
+          <td><span class="badge red">${escapeHtml(r.status)}</span></td>
+        </tr>
+      `).join('') : '<tr><td colspan="7" style="text-align:center; padding:20px;">ไม่มีข้อมูลลูกหนี้เสี่ยงสูง</td></tr>';
+    }
+
+    function exportToExcel() {
+      if (!currentDashboardData || !currentDashboardData.centers) {
+        alert('ยังไม่มีข้อมูลสำหรับส่งออก');
+        return;
+      }
+      const centerData = currentDashboardData.centers.map(c => ({
+        'ศูนย์จัดการหนี้ / สาขา': c.center,
+        'จำนวนลูกหนี้ (CIF)': c.debtors,
+        'หนี้คงเหลือรวม (บาท)': c.outstanding,
+        'ยอดจัดเก็บได้ (บาท)': c.collected,
+        'เป้าหมาย (บาท)': c.target,
+        'ผลงาน (%)': Number(c.collectionRate.toFixed(2)),
+        'สถานะ': c.status
+      }));
+
+      const officerData = (currentDashboardData.officers || []).map(o => ({
+        'พนักงานบริหารจัดการหนี้': o.officer,
+        'สังกัดศูนย์': o.center,
+        'รับผิดชอบ (CIF)': o.debtors,
+        'หนี้คงเหลือ (บาท)': o.outstanding,
+        'ยอดจัดเก็บได้ (บาท)': o.collected,
+        'ผลงาน (%)': Number(o.collectionRate.toFixed(2))
+      }));
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(centerData), "ผลงานรายศูนย์");
+      if (officerData.length > 0) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(officerData), "ผลงานรายพนักงานบริหารจัดการหนี้");
+      }
+      XLSX.writeFile(wb, `Debt_Report_NakhonSi_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    async function openOfficerModal() {
+      document.getElementById('officerModal').classList.remove('hidden');
+      await loadOfficerDirectory();
+    }
+    function closeOfficerModal() { document.getElementById('officerModal').classList.add('hidden'); }
+
+    async function loadOfficerDirectory() {
+      try {
+        const res = await callGas('getOfficers', { token: authToken });
+        document.getElementById('officerDirectoryBody').innerHTML = res.officers.length ? res.officers.map(o => `
+          <tr>
+            <td>${escapeHtml(o.EmployeeID || '-')}</td>
+            <td><b>${escapeHtml(o.OfficerName)}</b></td>
+            <td>${escapeHtml(o.BranchOrCenter)}</td>
+            <td>${escapeHtml(o.Role || '-')}</td>
+            <td>${escapeHtml(o.Phone || '-')}</td>
+            <td>${escapeHtml(o.PerformancePeriod || '-')}</td>
+            <td class="num">${o.Target ? formatMoney(o.Target) : '-'}</td>
+            <td class="num">${o.Collected ? formatMoney(o.Collected) : '-'}</td>
+          </tr>
+        `).join('') : '<tr><td colspan="8" style="text-align:center; padding:15px;">ยังไม่มีข้อมูลพนักงาน</td></tr>';
+      } catch(e) { console.error(e); }
+    }
+
+    async function saveOfficer(e) {
+      e.preventDefault();
+      try {
+        await callGas('saveOfficer', {
+          token: authToken,
+          officerName: document.getElementById('offName').value.trim(),
+          employeeId: document.getElementById('offEmployeeId').value.trim(),
+          branchOrCenter: document.getElementById('offBranch').value.trim(),
+          role: document.getElementById('offRole').value.trim(),
+          phone: document.getElementById('offPhone').value.trim(),
+          performancePeriod: document.getElementById('offPeriod').value,
+          target: document.getElementById('offTarget').value,
+          collected: document.getElementById('offCollected').value
+        });
+        alert('บันทึกข้อมูลพนักงานสำเร็จ');
+        document.getElementById('offName').value = '';
+        document.getElementById('offEmployeeId').value = '';
+        document.getElementById('offBranch').value = '';
+        document.getElementById('offRole').value = '';
+        document.getElementById('offPhone').value = '';
+        document.getElementById('offPeriod').value = '';
+        document.getElementById('offTarget').value = '';
+        document.getElementById('offCollected').value = '';
+        loadOfficerDirectory();
+      } catch(err) {
+        alert(err.message);
+      }
+    }
+
+    function openLogin() { document.getElementById('loginModal').classList.remove('hidden'); }
+    function closeLogin() { document.getElementById('loginModal').classList.add('hidden'); }
+
+    async function doLogin(e) {
+      e.preventDefault();
+      const msg = document.getElementById('loginMsg');
+      try {
+        showLoading(true);
+        msg.style.color = 'var(--primary-800)'; msg.textContent = 'กำลังเข้าสู่ระบบ...';
+        const res = await callGas('login', {
+          username: document.getElementById('username').value.trim(),
+          password: document.getElementById('password').value
+        }, { timeout: 60000, retries: 0 });
+
+        authToken = res.token; authUser = res.user;
+        localStorage.setItem('d_token', authToken); localStorage.setItem('d_user', JSON.stringify(authUser));
+        applyAuth(); closeLogin();
+        notify(`เข้าสู่ระบบสำเร็จ${authUser.fullName ? `: ${authUser.fullName}` : ''}`);
+        await loadDashboard(); await loadDebtorList(); await loadIndicatorRecords(); await loadSourceArchives();
+      } catch(err) {
+        msg.style.color = 'var(--red)'; msg.textContent = err.message;
+        notify(`เข้าสู่ระบบไม่สำเร็จ: ${err.message}`, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function logout() {
+      try { await callGas('logout', { token: authToken }); } catch(e){}
+      authToken = ''; authUser = null;
+      localStorage.removeItem('d_token'); localStorage.removeItem('d_user');
+      applyAuth(); loadDashboard();
+    }
+
+    function applyAuth() {
+      const isLog = Boolean(authToken && authUser);
+      document.getElementById('loginBtn').classList.toggle('hidden', isLog);
+      document.getElementById('logoutBtn').classList.toggle('hidden', !isLog);
+      document.querySelectorAll('.login-only').forEach(el => el.classList.toggle('hidden', !isLog));
+      document.getElementById('userBadge').textContent = isLog ? `ผู้ใช้งาน: ${authUser.fullName}` : 'โหมดผู้บริหาร';
+    }
+
+    async function loadDebtorList() {
+      if (!authToken) return;
+      try {
+        const res = await callGas('debtors', {
+          token: authToken,
+          keyword: document.getElementById('searchKw').value.trim(),
+          status: document.getElementById('searchStatus').value
+        });
+        document.getElementById('debtorTable').innerHTML = res.rows.length ? res.rows.map(r => `
+          <tr>
+            <td>${r.DebtorID}</td>
+            <td><b>${r.Name}</b></td>
+            <td>${r.Center}</td>
+            <td>${r.DebtType || '-'}</td>
+            <td class="num">${formatMoney(r.Outstanding)}</td>
+            <td>${r.DueDate || '-'}</td>
+            <td>${r.Phone || '-'}</td>
+            <td><span class="badge ${r.Status==='ปกติ'?'green':'red'}">${r.Status}</span></td>
+          </tr>
+        `).join('') : '<tr><td colspan="8" style="text-align:center; padding:20px;">ไม่พบข้อมูล</td></tr>';
+      } catch(e) { console.error(e); }
+    }
+
+    const INDICATOR_LABELS = {
+      npl_outstanding: 'NPL คงเหลือ', na: 'ผลการดำเนินงาน NA', provision_dqmis: 'การสำรองหนี้ DQMIS',
+      payment_due: 'รับชำระหนี้ถึงกำหนด', expired_statute: 'หนี้ขาดอายุความ',
+      approaching_statute: 'หนี้จะขาดอายุความ', write_off: 'Write Off',
+      litigation_reduction: 'ลดหนี้ดำเนินคดี', deceased: 'ข้อมูลลูกหนี้เสียชีวิต', officer_roster: 'ทะเบียนพนักงานและสาขา', kpi_forecast: 'คาดการณ์ KPI รายศูนย์',
+      badbank_weekly: 'ข้อมูลลูกหนี้ 6035 รายสัปดาห์', kpi_report: 'รายงาน KPI บน.2'
+    };
+
+    const INDICATOR_FILE_HINTS = [
+      ['npl_outstanding', ['NPL คงเหลือ']], ['na', ['ผลการดำเนินงาน NA']],
+      ['provision_dqmis', ['สำรอง DQMIS']], ['payment_due', ['รับชำระหนี้ถึงกำหนด']],
+      ['expired_statute', ['หนี้ขาดอายุความ']], ['approaching_statute', ['หนี้จะขาดอายุความ']],
+      ['write_off', ['Write Off']], ['litigation_reduction', ['ลดหนี้ดำเนินคดี']],
+      ['deceased', ['ลูกหนี้เสียชีวิต']], ['badbank_weekly', ['6035_IndicatorBadBank']],
+      ['kpi_forecast', ['คาดการณ์ KPIs']], ['kpi_report', ['KPI บน.2', 'KPI บน']],
+      ['officer_roster', ['รายชื่อพนักงานบริหารจัดการหนี้']]
+    ];
+
+    function suggestIndicatorFromFile(fileName) {
+      const name = String(fileName || '').toLowerCase();
+      const match = INDICATOR_FILE_HINTS.find(([, hints]) => hints.some(hint => name.includes(hint.toLowerCase())));
+      if (match) document.getElementById('indicatorKey').value = match[0];
+    }
+
+    function findIndicatorHeaderRow(rows) {
+      let bestIndex = -1;
+      let bestTextCount = 0;
+      let bestCellCount = 0;
+      for (let index = 0; index < Math.min(rows.length, 30); index++) {
+        const nonEmpty = rows[index].map(value => String(value ?? '').trim()).filter(Boolean);
+        const textCount = nonEmpty.filter(value => !/^[-+]?\d[\d,.]*(?:%|\s*)$/.test(value)).length;
+        if (textCount > bestTextCount || (textCount === bestTextCount && nonEmpty.length > bestCellCount)) {
+          bestIndex = index;
+          bestTextCount = textCount;
+          bestCellCount = nonEmpty.length;
+        }
+      }
+      return bestTextCount >= 2 ? bestIndex : -1;
+    }
+
+    function buildIndicatorExcelRecords(fileName, workbook, period, unit) {
+      const records = [];
+      workbook.SheetNames.forEach(sheetName => {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', raw: false });
+        const headerIndex = findIndicatorHeaderRow(rows);
+        if (headerIndex < 0) return;
+        const headers = rows[headerIndex].map((value, index) => String(value ?? '').trim() || `คอลัมน์ ${index + 1}`);
+        const headerContext = rows.slice(0, headerIndex).filter(row => row.some(value => String(value ?? '').trim()));
+
+        for (let index = headerIndex + 1; index < rows.length; index++) {
+          const values = rows[index].map(value => String(value ?? '').trim());
+          if (!values.some(Boolean)) continue;
+          const cells = {};
+          headers.forEach((header, columnIndex) => {
+            const key = `${header} [${columnIndex + 1}]`;
+            cells[key] = values[columnIndex] || '';
+          });
+          records.push({
+            sourceFile: fileName, sheetName, sourceRow: index + 1, period, unit,
+            record: { headerContext, headers, values: cells }
+          });
+        }
+      });
+      return records;
+    }
+
+    async function checksumFile(file) {
+      const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+      return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    function summarizeIndicatorRows(file, indicatorKey, period, rows, workbook = null) {
+      const bySheet = new Map();
+      rows.forEach(row => {
+        if (!bySheet.has(row.sheetName)) bySheet.set(row.sheetName, []);
+        bySheet.get(row.sheetName).push(row);
+      });
+      const sheets = Array.from(bySheet, ([name, sheetRows]) => ({
+        name,
+        rows: sheetRows.length,
+        columns: sheetRows[0]?.record.headers || [],
+        context: sheetRows[0]?.record.headerContext || [],
+        examples: sheetRows.slice(0, 3).map(row => row.record.values)
+      }));
+      return {
+        title: INDICATOR_LABELS[indicatorKey] || indicatorKey,
+        fileName: file.name,
+        indicatorKey,
+        period: period || 'ไม่ระบุงวด',
+        fileSize: file.size,
+        checksum: '',
+        sheetCount: workbook ? workbook.SheetNames.length : sheets.length,
+        rowCount: rows.length,
+        pageCount: 0,
+        sheets,
+        executiveSummary: `อ่านได้ ${formatNumber(rows.length)} แถว จาก ${formatNumber(sheets.length)} ชีตข้อมูล โดยเก็บหัวตารางและบริบทต้นฉบับไว้ครบ`
+      };
+    }
+
+    function summarizeDebtors(file, rows, sourceHeaders, headerContext = []) {
+      const branchCounts = new Map();
+      let totalOutstanding = 0;
+      let totalPrincipalInBill = 0, totalAccruedInterest = 0, totalInterestInBill = 0, totalLateCharge = 0;
+      rows.forEach(row => {
+        const branch = row.Center || 'ไม่ระบุสาขา';
+        branchCounts.set(branch, (branchCounts.get(branch) || 0) + 1);
+        totalOutstanding += Number(row.Outstanding || 0);
+        totalPrincipalInBill += Number(row.PrincipalInBill || 0);
+        totalAccruedInterest += Number(row.AccruedInterest || 0);
+        totalInterestInBill += Number(row.InterestInBill || 0);
+        totalLateCharge += Number(row.LateCharge || 0);
+      });
+      return {
+        title: 'ข้อมูลลูกหนี้ 6035 รายสัปดาห์',
+        fileName: file.name,
+        indicatorKey: 'badbank_weekly',
+        period: 'ตามวันที่ข้อมูลในไฟล์',
+        fileSize: file.size,
+        checksum: '',
+        sheetCount: 1,
+        rowCount: rows.length,
+        pageCount: 0,
+        sourceHeaders,
+        headerContext,
+        branchCount: branchCounts.size,
+        branchSamples: Array.from(branchCounts, ([branch, debtors]) => ({ branch, debtors })).sort((a, b) => b.debtors - a.debtors).slice(0, 10),
+        totals: { totalOutstanding, totalPrincipalInBill, totalAccruedInterest, totalInterestInBill, totalLateCharge },
+        executiveSummary: `ประมวลผลลูกหนี้ ${formatNumber(rows.length)} CIF ครอบคลุม ${formatNumber(branchCounts.size)} สาขา/ศูนย์; หนี้คงเหลือ ${formatMoney(totalOutstanding)}, ต้นเงินค้างบิล ${formatMoney(totalPrincipalInBill)}, ดอกเบี้ยพึง ${formatMoney(totalAccruedInterest)}, ดอกเบี้ยค้างบิล ${formatMoney(totalInterestInBill)} และค่าปรับ ${formatMoney(totalLateCharge)}`
+      };
+    }
+
+    function renderImportPreview(summary, previousSummary = null, unchangedRows = false) {
+      const lead = document.getElementById('importPreviewLead');
+      const body = document.getElementById('importSummaryBody');
+      const unchangedMarkup = unchangedRows ? '<p class="badge green">checksum ตรงกับต้นฉบับเดิม</p>' : '<p class="badge yellow">ตรวจพบไฟล์เปลี่ยนแปลงจากต้นฉบับเดิม</p>';
+      const delta = previousSummary ? renderSummaryDiff(summary, previousSummary) : '<p>เป็นไฟล์ใหม่ในระบบ จะนำเข้าข้อมูลทั้งหมดตามสรุปนี้</p>';
+      const sheetRows = (summary.sheets || []).map(sheet => `
+        <details style="border-top:1px solid var(--slate-200); padding:10px 0;">
+          <summary><b>${escapeHtml(sheet.name || 'เอกสาร')}</b> · ${formatNumber(sheet.rows || 0)} แถว · ${formatNumber((sheet.columns || []).length)} คอลัมน์</summary>
+          ${sheet.context?.length ? `<p>${escapeHtml(sheet.context.flat().filter(Boolean).join(' · ').slice(0, 900))}</p>` : ''}
+          <p><b>คอลัมน์:</b> ${escapeHtml((sheet.columns || []).join(' · '))}</p>
+          ${(sheet.examples || []).map((example, index) => `<p><b>ตัวอย่าง ${index + 1}:</b> ${escapeHtml(JSON.stringify(example).slice(0, 900))}</p>`).join('')}
+        </details>`).join('');
+      const branchCountLabel = summary.indicatorKey === 'officer_roster' ? 'จำนวนพนักงาน' : 'จำนวน CIF';
+      const branchRows = (summary.branchSamples || []).map(row => `<tr><td>${escapeHtml(row.branch)}</td><td class="num">${formatNumber(row.debtors)}</td></tr>`).join('');
+      const pageRows = (summary.pages || []).map(page => `<details style="border-top:1px solid var(--slate-200); padding:10px 0;"><summary>หน้า ${formatNumber(page.page)}</summary><p>${escapeHtml(page.text)}</p></details>`).join('');
+      lead.textContent = `${summary.fileName} · ${INDICATOR_LABELS[summary.indicatorKey] || summary.title} · ${summary.period || 'ไม่ระบุงวด'}`;
+      body.innerHTML = `${unchangedMarkup}<p><b>สรุป:</b> ${escapeHtml(summary.executiveSummary || '')}</p>${delta}
+        <p>ขนาด ${formatNumber(summary.fileSize || 0)} ไบต์ · ${formatNumber(summary.sheetCount || 0)} ชีต · ${formatNumber(summary.rowCount || 0)} แถว · ${formatNumber(summary.pageCount || 0)} หน้า</p>
+        ${summary.totals ? `<p><b>ยอดรวมที่อ่านได้:</b> หนี้คงเหลือ ${formatMoney(summary.totals.totalOutstanding)} · ต้นเงินค้างบิล ${formatMoney(summary.totals.totalPrincipalInBill)} · ดอกเบี้ยพึง ${formatMoney(summary.totals.totalAccruedInterest)} · ดอกเบี้ยค้างบิล ${formatMoney(summary.totals.totalInterestInBill)} · ค่าปรับ ${formatMoney(summary.totals.totalLateCharge)}</p>` : ''}
+        ${branchRows ? `<h4>สาขาที่พบ</h4><table><thead><tr><th>สาขา / ศูนย์</th><th class="num">${branchCountLabel}</th></tr></thead><tbody>${branchRows}</tbody></table>` : ''}
+        ${sheetRows ? `<h4>รายละเอียดแยกชีต</h4>${sheetRows}` : ''}${pageRows ? `<h4>รายละเอียดแยกหน้า</h4>${pageRows}` : ''}`;
+      document.getElementById('confirmImportButton').textContent = unchangedRows ? 'ไฟล์เหมือนเดิม · ข้ามนำเข้า' : 'ยืนยันและนำเข้าเฉพาะที่เปลี่ยน';
+      document.getElementById('confirmImportButton').disabled = unchangedRows;
+      document.getElementById('importPreviewModal').classList.remove('hidden');
+    }
+
+    function renderSummaryDiff(current, previous) {
+      const rowDelta = (current.rowCount || 0) - (previous.rowCount || 0);
+      const pageDelta = (current.pageCount || 0) - (previous.pageCount || 0);
+      const currentSheets = new Map((current.sheets || []).map(sheet => [sheet.name, sheet]));
+      const previousSheets = new Map((previous.sheets || []).map(sheet => [sheet.name, sheet]));
+      const names = new Set([...currentSheets.keys(), ...previousSheets.keys()]);
+      const sheetChanges = [];
+      names.forEach(name => {
+        const now = currentSheets.get(name);
+        const before = previousSheets.get(name);
+        if (!before) { sheetChanges.push(`เพิ่มชีต ${name}`); return; }
+        if (!now) { sheetChanges.push(`ลบชีต ${name}`); return; }
+        const nowColumns = new Set(now.columns || []);
+        const oldColumns = new Set(before.columns || []);
+        const added = [...nowColumns].filter(column => !oldColumns.has(column));
+        const removed = [...oldColumns].filter(column => !nowColumns.has(column));
+        const delta = (now.rows || 0) - (before.rows || 0);
+        if (delta || added.length || removed.length) {
+          sheetChanges.push(`${name}: จำนวนแถว ${delta >= 0 ? '+' : ''}${formatNumber(delta)}, เพิ่มคอลัมน์ ${added.length}, ลดคอลัมน์ ${removed.length}`);
+        }
+      });
+      const changes = sheetChanges.length ? `<ul>${sheetChanges.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p>โครงสร้างชีต/คอลัมน์ไม่เปลี่ยน ระบบจะตรวจความต่างรายระเบียนตอนยืนยัน</p>';
+      return `<p><b>เทียบกับเอกสารที่นำเข้าครั้งก่อน:</b> แถว ${formatNumber(previous.rowCount || 0)} → ${formatNumber(current.rowCount || 0)} (เปลี่ยนสุทธิ ${rowDelta >= 0 ? '+' : ''}${formatNumber(rowDelta)}); หน้า ${formatNumber(previous.pageCount || 0)} → ${formatNumber(current.pageCount || 0)} (เปลี่ยน ${pageDelta >= 0 ? '+' : ''}${formatNumber(pageDelta)})</p>${changes}<p>เมื่อยืนยัน ระบบจะเขียนเฉพาะรายการที่เปลี่ยน และเก็บรายการเดิมที่ยังเหมือนเดิมไว้</p>`;
+    }
+
+    async function buildIndicatorPdfRecords(file, period) {
+      if (!window.pdfjsLib) throw new Error('โหลดตัวอ่าน PDF ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      const records = [];
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const text = content.items.map(item => item.str).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        if (text) records.push({
+          sourceFile: file.name, sheetName: `หน้า ${pageNumber}`, sourceRow: pageNumber, period, unit: '',
+          record: { page: pageNumber, text }
+        });
+      }
+      if (!records.length) throw new Error('PDF นี้ไม่มีชั้นข้อความให้อ่าน อาจเป็นไฟล์สแกนภาพ จึงต้อง OCR ก่อนนำเข้า');
+      return records;
+    }
+
+    function deriveReportPeriod(rows, file, fallbackPeriod = '') {
+      for (const row of rows.slice(0, 30)) {
+        for (const value of row) {
+          const text = String(value ?? '').trim();
+          const ymd = text.match(/\b(20\d{2}|25\d{2})[-/]?(\d{2})[-/]?(\d{2})\b/);
+          const dmy = text.match(/\b\d{1,2}[/-](\d{1,2})[/-](\d{4})\b/);
+          const match = ymd || dmy;
+          if (!match) continue;
+          let year = Number(ymd ? match[1] : match[2]);
+          const month = Number(ymd ? match[2] : match[1]);
+          if (year > 2400) year -= 543;
+          if (year >= 2000 && month >= 1 && month <= 12) return `${year}-${String(month).padStart(2, '0')}`;
+        }
+      }
+      return fallbackPeriod || new Date(file.lastModified || Date.now()).toISOString().slice(0, 7);
+    }
+
+    function parseBadBankWorkbook(file, workbook, fallbackPeriod = '') {
+      const normalizeHeader = value => String(value || '').normalize('NFKC').toLowerCase().replace(/[\s\-_./()]/g, '');
+      const findColumn = (headers, names) => {
+        for (const name of names) {
+          const exact = headers.findIndex(header => normalizeHeader(header) === normalizeHeader(name));
+          if (exact >= 0) return exact;
+        }
+        return headers.findIndex(header => names.some(name => normalizeHeader(header).includes(normalizeHeader(name))));
+      };
+      const cifHeaders = ['CIF', 'เลขที่ CIF'];
+      const outstandingHeaders = ['หนี้คงเหลือ', 'ยอดหนี้คงเหลือ', 'Outstanding'];
+      let selected = null;
+      workbook.SheetNames.forEach(sheetName => {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', raw: false });
+        for (let index = 0; index < Math.min(rows.length, 40); index++) {
+          const headers = rows[index].map(value => String(value ?? '').trim());
+          const cifIndex = findColumn(headers, cifHeaders);
+          const nameIndex = findColumn(headers, ['ชื่อ-สกุล', 'ชื่อสกุล', 'ชื่อลูกหนี้', 'ชื่อลูกค้า']);
+          const debtIndex = findColumn(headers, outstandingHeaders);
+          if (cifIndex < 0 || nameIndex < 0 || debtIndex < 0) continue;
+          let validRows = 0;
+          for (let rowIndex = index + 1; rowIndex < rows.length; rowIndex++) {
+            if (String(rows[rowIndex][cifIndex] || '').trim() && String(rows[rowIndex][nameIndex] || '').trim()) validRows++;
+          }
+          if (!selected || validRows > selected.validRows) selected = { sheetName, rows, headerIndex: index, headers, validRows };
+          break;
+        }
+      });
+      if (!selected || !selected.validRows) throw new Error('ไม่พบชีตข้อมูลที่มีหัวตาราง CIF ชื่อลูกหนี้ และยอดหนี้คงเหลือ');
+
+      const { rows: json, headerIndex, headers } = selected;
+      const getCol = names => findColumn(headers, names);
+      const cCif = getCol(cifHeaders);
+      const cName = getCol(['ชื่อ-สกุล', 'ชื่อสกุล', 'ชื่อลูกหนี้', 'ชื่อลูกค้า']);
+      const cBranch = getCol(['สาข']);
+      const cHub = getCol(['HUB']);
+      const cOut = getCol(outstandingHeaders);
+      const cPrinBill = getCol(['ต้นเงินค้างในบิล']);
+      const cAccruedInterest = getCol(['ดอกเบี้ยพึง']);
+      const cInterestBill = getCol(['ดอกเบี้ยค้างในบิล']);
+      const cLateCharge = getCol(['Late Charge', 'ค่าปรับ']);
+      const cContract = getCol(['เลขที่สัญญ']);
+      const cPhone = getCol(['เบอร์โทรลูกค้า', 'Mobile Telephone', 'โทรศัพท์']);
+      const cDue = getCol(['Next Due date', 'วันครบกำหนด']);
+
+      const debtors = new Map();
+      for (let index = headerIndex + 1; index < json.length; index++) {
+        const row = json[index];
+        const cif = String(row[cCif] || '').trim();
+        const name = String(row[cName] || '').trim();
+        if (!cif || !name) continue;
+        const outstanding = Number(String(row[cOut] || '0').replace(/,/g, '')) || 0;
+        const principalInBill = cPrinBill >= 0 ? Number(String(row[cPrinBill] || '0').replace(/,/g, '')) || 0 : 0;
+        const accruedInterest = cAccruedInterest >= 0 ? Number(String(row[cAccruedInterest] || '0').replace(/,/g, '')) || 0 : 0;
+        const interestInBill = cInterestBill >= 0 ? Number(String(row[cInterestBill] || '0').replace(/,/g, '')) || 0 : 0;
+        const lateCharge = cLateCharge >= 0 ? Number(String(row[cLateCharge] || '0').replace(/,/g, '')) || 0 : 0;
+        const branch = String(row[cBranch] || '').trim();
+        const hub = String(row[cHub] || '').trim();
+        const contractNumber = cContract >= 0 ? String(row[cContract] || '').trim() : '';
+        if (!debtors.has(cif)) debtors.set(cif, {
+          DebtorID: cif, Name: name, Center: branch || hub || 'สำนักงานเขต', Outstanding: 0, Principal: '',
+          Phone: cPhone >= 0 ? String(row[cPhone] || '').trim() : '', Status: 'ปกติ', DebtType: 'สินเชื่อธนาคาร',
+          DueDate: normalizeImportedDate(cDue >= 0 ? row[cDue] : ''), ContractCount: 0,
+          AccruedInterest: 0, LateCharge: 0, PrincipalInBill: 0, InterestInBill: 0, ContractNumbers: []
+        });
+        const debtor = debtors.get(cif);
+        debtor.Outstanding += outstanding;
+        debtor.AccruedInterest += accruedInterest;
+        debtor.LateCharge += lateCharge;
+        debtor.PrincipalInBill += principalInBill;
+        debtor.InterestInBill += interestInBill;
+        debtor.ContractCount++;
+        if (contractNumber && debtor.ContractNumbers.indexOf(contractNumber) === -1) debtor.ContractNumbers.push(contractNumber);
+        if (!debtor.Phone && cPhone >= 0) debtor.Phone = String(row[cPhone] || '').trim();
+        const nextDue = normalizeImportedDate(cDue >= 0 ? row[cDue] : '');
+        if (nextDue && (!debtor.DueDate || new Date(nextDue) < new Date(debtor.DueDate))) debtor.DueDate = nextDue;
+      }
+
+      const debtorRows = Array.from(debtors.values()).map(debtor => ({ ...debtor, ContractNumbers: debtor.ContractNumbers.join(', ') }));
+      if (!debtorRows.length) throw new Error('ไม่พบแถวลูกหนี้ที่มี CIF และชื่อในไฟล์');
+      const summary = summarizeDebtors(file, debtorRows, headers, json.slice(0, headerIndex).filter(row => row.some(Boolean)));
+      summary.sheetCount = workbook.SheetNames.length;
+      summary.dataSheet = selected.sheetName;
+      summary.contractCount = debtorRows.reduce((sum, row) => sum + row.ContractCount, 0);
+      summary.executiveSummary = `พบ ${formatNumber(debtorRows.length)} CIF ในชีต ${selected.sheetName} จาก ${formatNumber(workbook.SheetNames.length)} ชีต; รวม ${formatNumber(summary.contractCount)} สัญญา ครอบคลุม ${formatNumber(summary.branchCount)} สาขา/ศูนย์; ยอดหนี้คงเหลือ ${formatMoney(summary.totals.totalOutstanding)}`;
+      return { rows: debtorRows, summary, period: deriveReportPeriod(json, file, fallbackPeriod) };
+    }
+
+    function parseOfficerRosterWorkbook(file, workbook) {
+      const staffById = new Map();
+      workbook.SheetNames.forEach(sheetName => {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', raw: false });
+        const headerIndex = rows.findIndex((row, index) => index < 20 && row.some(value => /ชื่อ\s*[-–]?\s*สกุล/i.test(String(value))) && row.some(value => /รหัส(?:พนักงาน)?/i.test(String(value))));
+        if (headerIndex < 0) return;
+        const headers = rows[headerIndex].map(value => String(value ?? '').trim());
+        const nameColumns = headers.map((header, index) => /ชื่อ\s*[-–]?\s*สกุล/i.test(header) ? index : -1).filter(index => index >= 0);
+        nameColumns.forEach(nameColumn => {
+          let idColumn = -1;
+          for (let index = Math.max(0, nameColumn - 2); index < nameColumn; index++) {
+            if (/รหัส(?:พนักงาน)?/i.test(headers[index])) idColumn = index;
+          }
+          const roleColumn = headers.findIndex((header, index) => index > nameColumn && /ตำแหน่ง/i.test(header));
+          const phoneColumn = headers.findIndex((header, index) => index > nameColumn && /โทรศัพท์|เบอร์โทร/i.test(header));
+          const hubColumn = headers.findIndex((header, index) => index > nameColumn && /HUB|สาขา|ศูนย์/i.test(header));
+          let groupName = '';
+          for (let prior = headerIndex - 1; prior >= Math.max(0, headerIndex - 3) && !groupName; prior--) {
+            const candidate = String(rows[prior][nameColumn] || rows[prior][Math.max(0, nameColumn - 1)] || '').trim();
+            if (/HUB|ศูนย์|สาขา|เขต/i.test(candidate)) groupName = candidate;
+          }
+
+          for (let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex++) {
+            const row = rows[rowIndex];
+            const officerName = String(row[nameColumn] || '').trim();
+            const employeeId = idColumn >= 0 ? String(row[idColumn] || '').trim() : '';
+            if (!officerName || !employeeId || !/\d/.test(employeeId)) continue;
+            const branchOrCenter = String((hubColumn >= 0 && row[hubColumn]) || groupName || '').trim();
+            const employee = {
+              employeeId, officerName, branchOrCenter,
+              role: roleColumn >= 0 ? String(row[roleColumn] || '').trim() : '',
+              phone: phoneColumn >= 0 ? String(row[phoneColumn] || '').trim() : '',
+              sheetName
+            };
+            const existing = staffById.get(employeeId);
+            if (!existing) {
+              staffById.set(employeeId, employee);
+            } else {
+              staffById.set(employeeId, {
+                ...existing,
+                officerName: employee.officerName || existing.officerName,
+                branchOrCenter: employee.branchOrCenter || existing.branchOrCenter,
+                role: employee.role || existing.role,
+                phone: employee.phone || existing.phone,
+                sheetName: employee.branchOrCenter ? employee.sheetName : existing.sheetName
+              });
+            }
+          }
+        });
+      });
+
+      const rows = Array.from(staffById.values());
+      if (!rows.length) throw new Error('ไม่พบตารางรายชื่อที่มีรหัสพนักงานและชื่อ-สกุล');
+      const branchCounts = new Map();
+      rows.forEach(row => {
+        const branch = row.branchOrCenter || 'ไม่ระบุ HUB/สาขา';
+        branchCounts.set(branch, (branchCounts.get(branch) || 0) + 1);
+      });
+      const period = 'master';
+      const summary = {
+        title: 'ทะเบียนพนักงานและสาขา', fileName: file.name, indicatorKey: 'officer_roster', period,
+        fileSize: file.size, checksum: '', sheetCount: workbook.SheetNames.length, rowCount: rows.length, pageCount: 0,
+        branchSamples: Array.from(branchCounts, ([branch, staff]) => ({ branch, debtors: staff })).sort((a, b) => b.debtors - a.debtors).slice(0, 20),
+        sourceHeaders: ['รหัสพนักงาน', 'ชื่อ-สกุล', 'ตำแหน่ง', 'เบอร์โทรศัพท์', 'HUB / สาขา'],
+        samples: rows.slice(0, 8),
+        executiveSummary: `อ่านและรวมรายชื่อพนักงานได้ ${formatNumber(rows.length)} คน ครอบคลุม ${formatNumber(branchCounts.size)} HUB/สาขา จาก ${formatNumber(workbook.SheetNames.length)} ชีต`
+      };
+      return { rows, summary, period };
+    }
+
+    async function prepareSourceImport(file, indicatorKey, mode, sourceMeta = null) {
+      const message = mode === 'debt' ? document.getElementById('debtMsg') : document.getElementById('indicatorImportMsg');
+      if (!file) return;
+      if (indicatorKey === 'officer_roster' && authUser?.role !== 'ADMIN') {
+        message.style.color = 'var(--red)';
+        message.textContent = 'เฉพาะผู้ดูแลระบบเท่านั้นที่นำเข้าทะเบียนพนักงานได้';
+        return;
+      }
+      if (file.size > 15 * 1024 * 1024) { notify('ไฟล์ต้องมีขนาดไม่เกิน 15 MB', 'error'); return; }
+      try {
+        showLoading(true);
+        message.style.color = 'var(--primary-800)';
+        message.textContent = 'กำลังตรวจ checksum ของไฟล์...';
+        const actualChecksum = await checksumFile(file);
+        if (sourceMeta?.checksum && sourceMeta.checksum !== actualChecksum) throw new Error('ไฟล์ในโฟลเดอร์เปลี่ยนหลังสแกน กรุณาสแกนโฟลเดอร์ใหม่');
+        const checksum = actualChecksum;
+        const requestedPeriod = mode === 'indicator' ? document.getElementById('indicatorPeriod').value.trim() : '';
+        const unit = mode === 'indicator' ? document.getElementById('indicatorUnit').value.trim() : '';
+        let preflight = await callGas('checkSourceFile', {
+          token: authToken, fileName: file.name, indicatorKey, period: requestedPeriod, checksum
+        }, { timeout: 60000, retries: 1 });
+        let previousSummary = null;
+        try { previousSummary = preflight.previousSummaryJson ? JSON.parse(preflight.previousSummaryJson) : null; } catch (error) { previousSummary = null; }
+        if (preflight.unchanged) {
+          const summary = previousSummary || {
+            title: INDICATOR_LABELS[indicatorKey], fileName: file.name, indicatorKey,
+            period: preflight.period || requestedPeriod || 'ไม่ระบุงวด', fileSize: file.size,
+            executiveSummary: 'checksum ตรงกับไฟล์ที่นำเข้าสำเร็จแล้ว ระบบข้ามการอ่านและประมวลผลซ้ำ'
+          };
+          pendingSourceImport = { file, indicatorKey, mode, checksum, period: preflight.period || requestedPeriod, unit, rows: [], summary, unchanged: true };
+          renderImportPreview(summary, previousSummary, true);
+          message.textContent = 'checksum ตรงกับไฟล์ที่นำเข้าสำเร็จแล้ว ข้ามการอ่านและประมวลผล';
+          return;
+        }
+
+        let parsed;
+        let reportPeriod = requestedPeriod;
+
+        if (mode === 'debt') {
+          const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+          parsed = parseBadBankWorkbook(file, workbook, sourceMeta?.period || '');
+          reportPeriod = parsed.period;
+          parsed.summary.sheetCount = workbook.SheetNames.length;
+        } else if (file.name.toLowerCase().endsWith('.pdf')) {
+          const rows = await buildIndicatorPdfRecords(file, reportPeriod);
+          if (!reportPeriod) {
+            const text = rows.map(row => row.record.text).join(' ');
+            const monthNames = { 'มกราคม': '01', 'กุมภาพันธ์': '02', 'มีนาคม': '03', 'เมษายน': '04', 'พฤษภาคม': '05', 'มิถุนายน': '06', 'กรกฎาคม': '07', 'สิงหาคม': '08', 'กันยายน': '09', 'ตุลาคม': '10', 'พฤศจิกายน': '11', 'ธันวาคม': '12' };
+            const match = text.match(/(\d{1,2})\s*(มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\s*(25\d{2}|20\d{2})/);
+            if (match) reportPeriod = `${Number(match[3]) - (Number(match[3]) > 2400 ? 543 : 0)}-${monthNames[match[2]]}`;
+            else reportPeriod = sourceMeta?.period || new Date(file.lastModified || Date.now()).toISOString().slice(0, 7);
+          }
+          parsed = { rows, summary: {
+            title: INDICATOR_LABELS[indicatorKey], fileName: file.name, indicatorKey, period: reportPeriod || 'ไม่ระบุงวด',
+            fileSize: file.size, checksum, sheetCount: 0, rowCount: 0, pageCount: rows.length,
+            pages: rows.map(row => ({ page: row.sourceRow, text: row.record.text })),
+            executiveSummary: `อ่านข้อความได้ ${formatNumber(rows.length)} หน้า; เก็บข้อความต้นฉบับแยกหน้าเพื่อค้นคืน`
+          }};
+        } else {
+          const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+          if (indicatorKey === 'officer_roster') {
+            parsed = parseOfficerRosterWorkbook(file, workbook);
+            reportPeriod = parsed.period;
+          } else {
+          const rows = buildIndicatorExcelRecords(file.name, workbook, reportPeriod, unit);
+          if (!rows.length) throw new Error('ไม่พบแถวข้อมูลในชีตของไฟล์ Excel');
+          if (!reportPeriod) {
+            const rawRows = workbook.SheetNames.flatMap(name => XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: '', raw: false }));
+            reportPeriod = deriveReportPeriod(rawRows, file, sourceMeta?.period || '');
+          }
+          parsed = { rows, summary: summarizeIndicatorRows(file, indicatorKey, reportPeriod, rows, workbook) };
+          }
+        }
+
+        if (indicatorKey === 'kpi_forecast' && !requestedPeriod) reportPeriod = '2569';
+        parsed.summary.period = reportPeriod || 'ไม่ระบุงวด';
+        parsed.summary.checksum = checksum;
+        preflight = await callGas('checkSourceFile', {
+          token: authToken, fileName: file.name, indicatorKey, period: reportPeriod, checksum
+        }, { timeout: 60000, retries: 1 });
+        previousSummary = null;
+        try { previousSummary = preflight.previousSummaryJson ? JSON.parse(preflight.previousSummaryJson) : null; } catch (error) { previousSummary = null; }
+        const unchanged = Boolean(preflight.unchanged);
+        const summary = unchanged && previousSummary ? previousSummary : parsed.summary;
+        pendingSourceImport = { file, indicatorKey, mode, checksum, period: reportPeriod, unit, ...parsed, summary, unchanged, sourceMeta };
+        renderImportPreview(summary, previousSummary, unchanged);
+        message.textContent = unchanged ? 'พบ checksum เดิมที่นำเข้าสำเร็จแล้ว ระบบจะข้ามการประมวลผล' : 'ตรวจสรุปและรายการเปลี่ยนแปลงก่อนยืนยันนำเข้า';
+      } catch (error) {
+        message.style.color = 'var(--red)';
+        message.textContent = error.message || 'อ่านหรือสรุปไฟล์ไม่สำเร็จ';
+        notify(message.textContent, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function uploadDebtFile() {
+      const file = document.getElementById('debtFile').files[0];
+      if (!file) { notify('กรุณาเลือกไฟล์ Excel', 'error'); return; }
+      return prepareSourceImport(file, 'badbank_weekly', 'debt');
+    }
+
+    function uploadIndicatorFile(fileOverride = null, indicatorKeyOverride = '') {
+      const file = fileOverride || document.getElementById('indicatorFile').files[0];
+      const indicatorKey = indicatorKeyOverride || document.getElementById('indicatorKey').value;
+      if (!file) { notify('กรุณาเลือกไฟล์ Excel หรือ PDF', 'error'); return; }
+      return prepareSourceImport(file, indicatorKey, 'indicator');
+    }
+
+    function cancelImportPreview() {
+      pendingSourceImport = null;
+      document.getElementById('importPreviewModal').classList.add('hidden');
+    }
+
+    async function confirmImportPreview() {
+      const pending = pendingSourceImport;
+      if (!pending || pending.unchanged) { cancelImportPreview(); return; }
+      if (sourceImportInProgress) return;
+      sourceImportInProgress = true;
+      document.getElementById('confirmImportButton').disabled = true;
+      const message = pending.mode === 'debt' ? document.getElementById('debtMsg') : document.getElementById('indicatorImportMsg');
+      let archivedFile = null;
+      let importId = '';
+      try {
+        showLoading(true);
+        document.getElementById('importPreviewModal').classList.add('hidden');
+        message.style.color = 'var(--primary-800)';
+        message.textContent = 'กำลังเก็บไฟล์ต้นฉบับและสรุปลง Google Drive...';
+        archivedFile = pending.sourceMeta ? {
+          fileId: pending.sourceMeta.fileId, fileName: pending.file.name,
+          fileUrl: pending.sourceMeta.fileUrl, fileSize: pending.file.size
+        } : await archiveSourceFile(pending.file, pending.indicatorKey, pending.checksum, pending.period, pending.summary);
+        if (archivedFile.unchanged) {
+          message.textContent = 'checksum เดิมถูกนำเข้าสำเร็จแล้ว จึงข้ามการประมวลผล';
+          appendSourceFileLink(message, archivedFile);
+          notify(message.textContent);
+          await loadSourceArchives();
+          return;
+        }
+
+        let result;
+        if (pending.mode === 'debt') {
+          message.textContent = 'กำลังนำเข้าข้อมูลลูกหนี้ที่เปลี่ยนแปลง...';
+          result = await commitDebtorRows(pending.file, pending.rows, message);
+        } else if (pending.indicatorKey === 'officer_roster') {
+          message.textContent = 'กำลังปรับปรุงทะเบียนพนักงานและสาขา...';
+          result = await commitOfficerRosterRows(pending.rows, message);
+        } else {
+          message.textContent = 'กำลังนำเข้าข้อมูลตัวชี้วัดที่เปลี่ยนแปลง...';
+          result = await commitIndicatorRows(pending, message);
+        }
+
+        const importSummary = JSON.stringify({
+          total: result.total, inserted: result.inserted, updated: result.updated,
+          deleted: result.deleted || 0, checksum: pending.checksum, period: pending.period
+        });
+        await callGas('completeSourceImport', {
+          token: authToken, fileId: archivedFile.fileId, status: 'IMPORTED', importSummary,
+          checksum: pending.checksum, period: pending.period, indicatorKey: pending.indicatorKey,
+          fileName: pending.file.name, summary: compactSourceSummary(pending.summary)
+        }, { timeout: 60000, retries: 0 });
+        message.style.color = 'var(--primary-800)';
+        message.textContent = `ประมวลผลสำเร็จ เพิ่ม ${result.inserted || 0} · ปรับปรุง ${result.updated || 0} · ลบรายการเดิมที่หายไป ${result.deleted || 0}`;
+        appendSourceFileLink(message, archivedFile);
+        notify(message.textContent);
+        pendingSourceImport = null;
+        if (pending.mode === 'debt') {
+          document.getElementById('debtFile').value = '';
+          await loadDashboard();
+          await loadDebtorList();
+        } else if (pending.indicatorKey === 'officer_roster') {
+          document.getElementById('indicatorFile').value = '';
+          await loadDashboard();
+          await loadOfficerDirectory();
+        } else {
+          document.getElementById('indicatorFile').value = '';
+          await loadIndicatorRecords(1);
+        }
+        await loadSourceArchives();
+      } catch (error) {
+        if (importId) {
+          try { await callGas(pending.mode === 'debt' ? 'importAbort' : 'indicatorImportAbort', { token: authToken, importId }, { timeout: 30000, retries: 0 }); } catch (abortError) { console.error(abortError); }
+        }
+        if (archivedFile && !archivedFile.unchanged) {
+          try {
+            await callGas('completeSourceImport', {
+              token: authToken, fileId: archivedFile.fileId, status: 'FAILED', importSummary: error.message,
+              checksum: pending.checksum, period: pending.period, indicatorKey: pending.indicatorKey,
+              fileName: pending.file.name, summary: compactSourceSummary(pending.summary)
+            }, { timeout: 30000, retries: 0 });
+          } catch (statusError) { console.error(statusError); }
+        }
+        message.style.color = 'var(--red)';
+        message.textContent = error.message || 'ประมวลผลเอกสารไม่สำเร็จ';
+        if (archivedFile) appendSourceFileLink(message, archivedFile);
+        notify(message.textContent, 'error');
+        await loadSourceArchives();
+      } finally {
+        sourceImportInProgress = false;
+        if (pendingSourceImport && !pendingSourceImport.unchanged) document.getElementById('confirmImportButton').disabled = false;
+        showLoading(false);
+      }
+    }
+
+    async function commitDebtorRows(file, rows, message) {
+      let importId = '';
+      try {
+        const begin = await callGas('importBegin', { token: authToken, sourceFile: file.name }, { timeout: 60000, retries: 0 });
+        importId = begin.importId;
+        const chunkSize = Number(begin.chunkSize || 50);
+        for (let index = 0; index < rows.length; index += chunkSize) {
+          const chunk = rows.slice(index, index + chunkSize);
+          message.textContent = `กำลังส่งลูกหนี้ ${Math.min(index + chunk.length, rows.length)} / ${rows.length} รายการ`;
+          await callGas('importChunk', { token: authToken, importId, rows: chunk }, { timeout: 120000, retries: 0 });
+        }
+        message.textContent = 'กำลังยืนยันทะเบียนลูกหนี้...';
+        const result = await callGas('importCommit', { token: authToken, importId }, { timeout: 300000, retries: 0 });
+        return { ...result, total: result.total || rows.length };
+      } catch (error) {
+        if (importId) {
+          try { await callGas('importAbort', { token: authToken, importId }, { timeout: 30000, retries: 0 }); } catch (abortError) { console.error(abortError); }
+        }
+        throw error;
+      }
+    }
+
+    async function commitIndicatorRows(pending, message) {
+      let importId = '';
+      try {
+        const begin = await callGas('indicatorImportBegin', {
+          token: authToken, indicatorKey: pending.indicatorKey, period: pending.period,
+          unit: pending.unit, sourceFile: pending.file.name
+        }, { timeout: 60000, retries: 0 });
+        importId = begin.importId;
+        const chunkSize = Number(begin.chunkSize || 25);
+        for (let index = 0; index < pending.rows.length; index += chunkSize) {
+          const chunk = pending.rows.slice(index, index + chunkSize);
+          message.textContent = `กำลังบันทึก ${Math.min(index + chunk.length, pending.rows.length)} / ${pending.rows.length} รายการ`;
+          await callGas('indicatorImportChunk', { token: authToken, importId, rows: chunk }, { timeout: 120000, retries: 0 });
+        }
+        message.textContent = 'กำลังยืนยันข้อมูลตัวชี้วัด...';
+        return await callGas('indicatorImportCommit', { token: authToken, importId }, { timeout: 300000, retries: 0 });
+      } catch (error) {
+        if (importId) {
+          try { await callGas('indicatorImportAbort', { token: authToken, importId }, { timeout: 30000, retries: 0 }); } catch (abortError) { console.error(abortError); }
+        }
+        throw error;
+      }
+    }
+
+    async function commitOfficerRosterRows(rows, message) {
+      let inserted = 0, updated = 0;
+      const chunkSize = 100;
+      for (let index = 0; index < rows.length; index += chunkSize) {
+        const chunk = rows.slice(index, index + chunkSize);
+        message.textContent = `กำลังปรับปรุงรายชื่อ ${Math.min(index + chunk.length, rows.length)} / ${rows.length} คน`;
+        const result = await callGas('syncOfficerRoster', { token: authToken, rows: chunk }, { timeout: 120000, retries: 0 });
+        inserted += Number(result.inserted || 0);
+        updated += Number(result.updated || 0);
+      }
+      return { inserted, updated, deleted: 0, unchanged: 0, total: inserted + updated };
+    }
+
+    async function loadSourceArchives() {
+      if (!authToken) return;
+      const tbody = document.getElementById('sourceArchiveTable');
+      try {
+        const result = await callGas('sourceArchives', { token: authToken, page: 1 });
+        document.getElementById('sourceArchiveCount').textContent = `แสดง ${formatNumber(result.rows.length)} จาก ${formatNumber(result.total)} ไฟล์ล่าสุด`;
+        tbody.innerHTML = result.rows.length ? result.rows.map(row => {
+          let summary = {};
+          try { summary = JSON.parse(row.SummaryJson || '{}'); } catch (error) { summary = {}; }
+          const status = row.ImportStatus === 'IMPORTED' ? 'นำเข้าสำเร็จ' : row.ImportStatus === 'FAILED' ? 'นำเข้าไม่สำเร็จ' : 'รอดำเนินการ';
+          const badge = row.ImportStatus === 'IMPORTED' ? 'green' : row.ImportStatus === 'FAILED' ? 'red' : 'yellow';
+          const details = summary.executiveSummary || row.ImportSummary || 'ยังไม่มีสรุป';
+          const dimensions = `${formatNumber(summary.sheetCount || 0)} ชีต · ${formatNumber(summary.rowCount || 0)} แถว · ${formatNumber(summary.pageCount || 0)} หน้า`;
+          return `<tr>
+            <td><b>${escapeHtml(row.FileName || '-')}</b><br>${escapeHtml(INDICATOR_LABELS[row.IndicatorKey] || row.IndicatorKey || '-')} · ${escapeHtml(row.ReportPeriod || '-')}</td>
+            <td>${escapeHtml(row.UploadedAt ? new Date(row.UploadedAt).toLocaleString('th-TH') : '-')}</td>
+            <td><span class="badge ${badge}">${status}</span></td>
+            <td><details><summary>${escapeHtml(details)}</summary><p>${escapeHtml(dimensions)}</p><p>${escapeHtml(JSON.stringify(summary.totals || summary.branchSamples || {}).slice(0, 1800))}</p></details></td>
+            <td>${row.DriveUrl ? `<a href="${escapeHtml(row.DriveUrl)}" target="_blank" rel="noopener noreferrer">เปิดไฟล์ต้นฉบับ</a>` : '-'}</td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="5" style="text-align:center; padding:18px;">ยังไม่มีไฟล์ในคลังเอกสาร</td></tr>';
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--red);">${escapeHtml(error.message)}</td></tr>`;
+      }
+    }
+
+    async function scanSourceFolder() {
+      if (!authToken) { notify('กรุณาเข้าสู่ระบบก่อนสแกนโฟลเดอร์', 'error'); return; }
+      const box = document.getElementById('sourceFolderScanResults');
+      box.innerHTML = '<p>กำลังสแกนและตรวจ checksum ของไฟล์ในโฟลเดอร์...</p>';
+      try {
+        const result = await callGas('scanSourceFolder', { token: authToken }, { timeout: 180000, retries: 0 });
+        sourceFolderRows = result.rows || [];
+        const changed = sourceFolderRows.filter(row => row.status === 'NEW' || row.status === 'CHANGED');
+        document.getElementById('sourceArchiveCount').textContent = `สแกนพบ ${formatNumber(result.total)} ไฟล์ · ใหม่/เปลี่ยน ${formatNumber(result.changed)} ไฟล์`;
+        box.innerHTML = sourceFolderRows.length ? `<div class="table-wrap"><table>
+          <thead><tr><th>ไฟล์</th><th>หมวด</th><th>สถานะ checksum</th><th>วันที่แก้ไข</th><th>การทำงาน</th></tr></thead>
+          <tbody>${sourceFolderRows.map((row, index) => {
+            const status = row.status === 'UNCHANGED' ? 'ไม่เปลี่ยน' : row.status === 'CHANGED' ? 'เปลี่ยนแปลง' : row.status === 'TOO_LARGE' ? 'เกิน 15 MB' : 'ไฟล์ใหม่';
+            const badge = row.status === 'UNCHANGED' ? 'green' : row.status === 'TOO_LARGE' ? 'red' : 'yellow';
+            const action = row.status === 'NEW' || row.status === 'CHANGED'
+              ? `<button class="btn btn-light" onclick="inspectSourceFileFromDrive(${index})">ตรวจสรุป/ประมวลผล</button>`
+              : row.fileUrl ? `<a href="${escapeHtml(row.fileUrl)}" target="_blank" rel="noopener noreferrer">เปิดไฟล์</a>` : '-';
+            return `<tr><td>${escapeHtml(row.fileName)}<br>${formatNumber(row.fileSize)} ไบต์</td><td>${escapeHtml(INDICATOR_LABELS[row.indicatorKey] || row.indicatorKey)}</td><td><span class="badge ${badge}">${status}</span></td><td>${escapeHtml(row.updatedAt ? new Date(row.updatedAt).toLocaleString('th-TH') : '-')}</td><td>${action}</td></tr>`;
+          }).join('')}</tbody></table></div>` : '<p>ไม่พบไฟล์ Excel/PDF ในโฟลเดอร์ต้นฉบับ</p>';
+      } catch (error) {
+        box.innerHTML = `<p style="color:var(--red)">${escapeHtml(error.message)}</p>`;
+      }
+    }
+
+    async function inspectSourceFileFromDrive(index) {
+      const source = sourceFolderRows[index];
+      if (!source) return;
+      try {
+        showLoading(true);
+        const result = await callGas('readSourceFolderFile', { token: authToken, fileId: source.fileId }, { timeout: 180000, retries: 0 });
+        const binary = atob(result.base64Data);
+        const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+        const file = new File([bytes], result.fileName, { type: result.mimeType || 'application/octet-stream', lastModified: new Date(result.updatedAt || Date.now()).getTime() });
+        const mode = source.indicatorKey === 'badbank_weekly' ? 'debt' : 'indicator';
+        await prepareSourceImport(file, source.indicatorKey, mode, {
+          fileId: source.fileId, fileUrl: source.fileUrl, checksum: source.checksum, period: source.period
+        });
+      } catch (error) {
+        notify(error.message || 'อ่านไฟล์จาก Drive ไม่สำเร็จ', 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function selectIndicatorFile(indicatorKey) {
+      if (!authToken) { notify('กรุณาเข้าสู่ระบบก่อนนำเข้าข้อมูล', 'error'); return; }
+      if (indicatorKey === 'officer_roster' && authUser?.role !== 'ADMIN') { notify('เฉพาะผู้ดูแลระบบเท่านั้นที่นำเข้าทะเบียนพนักงานได้', 'error'); return; }
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = indicatorKey === 'kpi_report' ? '.pdf' : '.xlsx,.xls';
+      input.onchange = () => {
+        const file = input.files[0];
+        if (file) uploadIndicatorFile(file, indicatorKey);
+      };
+      input.click();
+    }
+
+    function compactSourceSummary(summary) {
+      return {
+        ...summary,
+        sourceHeaders: (summary.sourceHeaders || []).slice(0, 80),
+        headerContext: (summary.headerContext || []).slice(0, 5).map(row => row.slice(0, 30)),
+        branchSamples: (summary.branchSamples || []).slice(0, 10),
+        sheets: (summary.sheets || []).slice(0, 20).map(sheet => ({
+          ...sheet,
+          columns: (sheet.columns || []).slice(0, 24).map(column => String(column).slice(0, 40)),
+          context: (sheet.context || []).slice(0, 2).map(row => row.slice(0, 20).map(value => String(value).slice(0, 120))),
+          examples: (sheet.examples || []).slice(0, 1).map(example => String(typeof example === 'string' ? example : JSON.stringify(example)).slice(0, 700))
+        })),
+        pages: (summary.pages || []).slice(0, 20).map(page => ({ page: page.page, text: String(page.text || '').slice(0, 500) }))
+      };
+    }
+
+    function archiveSourceFile(file, indicatorKey, checksum, period, summary) {
+      if (file.size > 15 * 1024 * 1024) return Promise.reject(new Error('ไฟล์ต้นฉบับต้องมีขนาดไม่เกิน 15 MB'));
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('อ่านไฟล์ต้นฉบับเพื่อสำรองไม่สำเร็จ'));
+        reader.onload = async () => {
+          try {
+            const dataUrl = String(reader.result || '');
+            const base64Data = dataUrl.slice(dataUrl.indexOf(',') + 1);
+            const saved = await callGas('saveSourceFile', {
+              token: authToken,
+              fileName: file.name,
+              mimeType: file.type || 'application/octet-stream',
+              indicatorKey,
+              checksum,
+              period,
+              summary: compactSourceSummary(summary),
+              base64Data
+            }, { timeout: 180000, retries: 0 });
+            resolve(saved);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function appendSourceFileLink(container, archivedFile) {
+      if (!archivedFile || !archivedFile.fileUrl) return;
+      const link = document.createElement('a');
+      link.href = archivedFile.fileUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = ' เปิดไฟล์ต้นฉบับใน Drive';
+      link.style.display = 'inline-block';
+      link.style.marginLeft = '8px';
+      container.appendChild(link);
+    }
+
+    async function loadIndicatorRecords(page = indicatorPage) {
+      if (!authToken) return;
+      indicatorPage = Math.max(1, Number(page) || 1);
+      const tbody = document.getElementById('indicatorTable');
+      try {
+        const result = await callGas('indicatorRecords', {
+          token: authToken,
+          indicatorKey: document.getElementById('indicatorFilter').value,
+          keyword: document.getElementById('indicatorSearch').value.trim(),
+          page: indicatorPage
+        });
+        indicatorTotal = result.total;
+        const pageCount = Math.max(1, Math.ceil(indicatorTotal / 50));
+        if (indicatorPage > pageCount) return loadIndicatorRecords(pageCount);
+        document.getElementById('indicatorRecordCount').textContent = `พบ ${formatNumber(result.total)} รายการ`;
+        document.getElementById('indicatorPageLabel').textContent = `หน้า ${indicatorPage} / ${pageCount}`;
+        document.getElementById('indicatorPrev').disabled = indicatorPage <= 1;
+        document.getElementById('indicatorNext').disabled = indicatorPage >= pageCount;
+        tbody.innerHTML = result.rows.length ? result.rows.map(row => {
+          let record = {};
+          try { record = JSON.parse(row.RecordJson || '{}'); } catch (error) { record = { raw: row.RecordJson }; }
+          const preview = record.text || JSON.stringify(record.values || record);
+          return `<tr>
+            <td>${escapeHtml(INDICATOR_LABELS[row.IndicatorKey] || row.IndicatorKey)}</td>
+            <td>${escapeHtml(row.Period || '-')}</td>
+            <td>${escapeHtml(row.SourceFile || '-')}</td>
+            <td>${escapeHtml([row.SheetName, row.SourceRow].filter(Boolean).join(' / ') || '-')}</td>
+            <td title="${escapeHtml(preview)}">${escapeHtml(String(preview).slice(0, 280))}${String(preview).length > 280 ? '...' : ''}</td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="5" style="text-align:center; padding:18px;">ยังไม่มีข้อมูลตามตัวกรอง</td></tr>';
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:18px; color:var(--red);">${escapeHtml(error.message)}</td></tr>`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('indicatorFile').addEventListener('change', event => suggestIndicatorFromFile(event.target.files[0]?.name));
+      document.getElementById('reportDate').value = new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' });
+      try {
+        showLoading(true);
+        if (authToken) {
+          try {
+            const res = await callGas('verify', { token: authToken }, { timeout: 30000, retries: 1 });
+            authUser = res.user;
+          } catch(e) {
+            authToken = ''; authUser = null;
+            localStorage.removeItem('d_token'); localStorage.removeItem('d_user');
+          }
+        }
+        applyAuth();
+        await loadDashboard();
+        if (authToken) { await loadDebtorList(); await loadIndicatorRecords(); await loadSourceArchives(); }
+      } catch(e) { console.error(e); }
+      finally { showLoading(false); }
+    });
+  </script>
+</body>
+</html>
